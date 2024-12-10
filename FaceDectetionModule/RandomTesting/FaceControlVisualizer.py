@@ -50,6 +50,21 @@ thresholds = {
     "scrunch_mouth_full": 12       # Threshold for full scrunch
 }
 
+# Map expressions to drone commands
+expression_commands = {
+    "A": "No command",
+    "B": "Take Photo",
+    "C": "Move Up",
+    "D": "Move Down",
+    "E": "Rotate Right",
+    "F": "Rotate Left",
+    "G": "Fly Right",
+    "H": "Fly Left",
+    "I": "Move Forwards",
+    "J": "Move Backwards",
+    "K": "Multipurpose"
+}
+
 setup_phases = ["A: Neutral Face", "B: Open Mouth", "C: Teeth Smile", 
                 "D: Frown", "E: Scrunch Mouth Right", "F: Scrunch Mouth Left",
                 "G: Puffed Right Cheek", "H: Puffed Left Cheek",
@@ -82,7 +97,8 @@ while cap.isOpened():
 
         # Draw the face mesh
         for coord in landmark_coords:
-            cv2.circle(frame, coord, 1, (0, 255, 0), -1)
+            cv2.circle(frame, coord, 4, (0, 0, 0), -1) 
+            cv2.circle(frame, coord, 2, (0, 225, 0), -1)
 
         # Setup phase: Save baseline data for each expression
         if current_phase < len(setup_phases):
@@ -109,8 +125,9 @@ while cap.isOpened():
 
             # Detect expression
             expression = detect_expression(displacements, thresholds)
-            cv2.putText(frame, f"Expression: {expression}",
-                        (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
+            drone_command = expression_commands.get(expression, "Unknown Command")
+            output_text = f"Expression: {expression} | Command: {drone_command}"
+            cv2.putText(frame, output_text, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2)
 
     # Display the frame
     cv2.imshow("Face Mesh", frame)

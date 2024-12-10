@@ -64,7 +64,7 @@ while cap.isOpened():
                 print(f"Saved {text_setup_phases[current_setup_phase]}")
                 current_setup_phase += 1
 
-        else: # Live Phase
+        else: # Live Phase  
             pass
 
     # Display the frame and Exit on pressing 'q'
