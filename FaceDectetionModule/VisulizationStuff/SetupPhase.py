@@ -1,60 +1,79 @@
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-import matplotlib.image as mpimg
-import numpy as np
+import random
 
-# Load the uploaded image
-background_image_path = "C:\\Users\\himad\\OneDrive\\OneDrive - UMass Lowell\\CurrentSchoolDocs\\Capstone Proposal\\MediaPipeMeshNumbers.png" # Update this path to the image location on your PC
-background_image = mpimg.imread(background_image_path)
-
-# Simulated points on the mesh for calibration (x, y coordinates normalized for this image)
-simulated_landmarks = {
-    "Point A": (0.4, 0.6),  # Example points
-    "Point B": (0.6, 0.6),
-    "Nose Tip": (0.5, 0.5)
+# Sample facial mesh nodes
+nodes = {
+    1: (0, 0),  # Nose tip
+    2: (-1, 1),
+    3: (1, 1),
+    4: (-1, -1),
+    5: (1, -1),
+    6: (0.5, 0.5),
+    7: (-0.5, -0.5),
+    8: (0.5, -0.5),
+    9: (-0.5, 0.5),
 }
 
-# Calibration sequence
-calibration_sequence = ["Point A", "Point B"]
-
-# Calculate Euclidean distance
-def calculate_distance(pt1, pt2):
-    return np.linalg.norm(np.array(pt1) - np.array(pt2))
-
-# Setup the plot
+# Create the figure and axes
 fig, ax = plt.subplots(figsize=(8, 8))
-ax.imshow(background_image)
-ax.axis('off')  # Hide axis
+ax.set_xlim(-2, 2)
+ax.set_ylim(-2, 2)
+ax.set_title("Setup Phase Visualization")
+ax.axis('off')
 
-# Placeholder for line and text
-line, = ax.plot([], [], color='red', linewidth=3)  # Red line with increased width
-distance_text = ax.text(0.1, 0.9, '', fontsize=12, color='black', transform=ax.transAxes)
-distances_array_text = ax.text(0.1, 0.85, '', fontsize=10, color='black', transform=ax.transAxes)
+# Load the background image
+background = plt.imread('C:/Users/himad/Desktop/AdaptiveDrone/AdaptiveDrone/FaceDectetionModule/VisulizationStuff/MediaPipeMeshNumbers.png')
+ax.imshow(background, extent=[-2, 2, -2, 2], aspect='auto')
 
-# Store distances
-distances_array = []
+# Initialize elements
+line, = ax.plot([], [], color='red', lw=2)
+text = ax.text(-1.8, -1.8, "Array: []", fontsize=12, color='blue')
 
-# Animation function
-def animate(i):
-    pt1_label = calibration_sequence[i % len(calibration_sequence)]
-    pt1 = simulated_landmarks[pt1_label]
-    pt2 = simulated_landmarks["Nose Tip"]
+# Initialize distances and cycle data
+distances = []
+selected_nodes = []
+cycle = 0
 
-    # Update line with new data
-    line.set_data([pt1[0], pt2[0]], [pt1[1], pt2[1]])
-    
-    # Calculate distance
-    distance = calculate_distance(pt1, pt2)
-    distances_array.append(round(distance, 4))
+# Function to generate random distances and nodes for the next cycle
+def generate_random_data():
+    random_distances = [round(random.uniform(1, 10), 1) for _ in range(5)]
+    random_nodes = random.sample(list(nodes.keys())[1:], 5)  # Randomly select 5 nodes excluding the nose tip
+    return random_distances, random_nodes
 
-    # Update text
-    distance_text.set_text(f'Distance from {pt1_label} to Nose: {distance:.4f}')
-    distances_array_text.set_text(f'Distances Array: {distances_array}')
+# Animation update function
+def update(frame):
+    global distances, selected_nodes, cycle
 
-    return line, distance_text, distances_array_text
+    if frame == 0:
+        # Frame 1: Empty array
+        line.set_data([], [])
+        text.set_text(f"Cycle {cycle + 1}: Array: []")
+    else:
+        # Frames 2 to 6: Draw lines to different nodes and update the array
+        node1 = nodes[1]
+        node2 = nodes[selected_nodes[frame - 1]]
+        line.set_data([node1[0], node2[0]], [node1[1], node2[1]])
+        text.set_text(f"Cycle {cycle + 1}: Array: {distances[:frame]}")
 
-# Create animation
-ani = FuncAnimation(fig, animate, frames=len(calibration_sequence) * 3, interval=1000, blit=True)
+    # Reset distances and cycle after 5 frames
+    if frame == 5:
+        distances, selected_nodes = generate_random_data()
+        cycle += 1
+    return line, text
 
-# Show the animation
+# Generate initial random distances and nodes
+distances, selected_nodes = generate_random_data()
+
+# Set up animation
+ani = FuncAnimation(fig, update, frames=range(6), interval=1000, repeat=True)
+
+# Quit the animation on 'q' key press
+def on_key(event):
+    if event.key == 'q':
+        plt.close(fig)
+
+fig.canvas.mpl_connect('key_press_event', on_key)
+
+# Display the animation
 plt.show()
