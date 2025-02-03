@@ -27,7 +27,7 @@ with open('./model', 'rb') as f:
     model = pickle.load(f)
 
 # Run video capture feed (add setup phase, Live phase, and user text prompts)
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 ret, frame = cap.read()
 while ret:
     # Set up phase - Prompt user to make face, press s to take photo, save photo in correspodning folder, and repeat for all expressions #
