@@ -6,6 +6,8 @@ import cv2
 from PIL import Image, ImageTk
 # Import the tello module
 from djitellopy import tello
+# Import indicators
+from indicators import Indicators
 # Import threading for our takeoff/land method
 import threading
 # import our flight commands
@@ -34,11 +36,18 @@ class DroneController:
         # Define a speed for the drone to fly at
         self.drone.speed = 50
 
+        # Define the height and width to resize the current frame to
+        self.h = 480
+        self.w = 720
+
         # Label for displaying video stream
         self.cap_lbl = Label(self.root)
 
         # Create a button to send takeoff and land commands to the drone
         self.takeoff_land_button = Button(self.root, text="Takeoff/Land", command=lambda: self.takeoff_land())
+
+        # Initialize the indicators object
+        self.indicators = Indicators(self.drone, self.w, self.h)
 
     # Define a method for taking off and landing
     def takeoff_land(self):
@@ -108,6 +117,9 @@ class DroneController:
 
         frame = cv2.resize(frame, (w, h))
 
+        # Draw the battery indicator on the frame
+        self.indicators.draw_battery_indicator(frame)
+
         # Convert the current frame to the rgb colorspace
         cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
 
@@ -135,6 +147,7 @@ class DroneController:
         try:
             # Release any resources
             print("Cleaning up resources...")
+            self.indicators.update = False
             self.drone.end()
             self.root.quit()  # Quit the Tkinter main loop
             exit()
