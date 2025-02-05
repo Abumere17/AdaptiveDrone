@@ -3,6 +3,7 @@
     run.py
 
     This will act as the "main" script, integrating all modules into the app. Run this to start the app
+    Will launch the main menu. Based on the button presses, other parts of the app will be launched
 
     TODO:
     - 

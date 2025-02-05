@@ -32,11 +32,11 @@ class MainMenu:
         close_button.pack(pady=10)
 
     # Button functions
-    # tx.button() - last param needs to be changed to the correspoding function
     def create_button(self, text, message):
-        button = tk.Button(self.root, text=text, font=("Georgia", 12), command=lambda: self.on_button_press(message))
+        button = tk.Button(self.root, text=text, font=("Georgia", 12), command=lambda: self.on_button_press(message)) # tx.button() - last param needs to be changed
         button.pack(pady=5)
 
+    # On button press, return smth so that run can decide what to do
     def on_button_press(self, message):
         print(message)
         self.label.config(text=message)  # Update label in GUI

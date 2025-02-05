@@ -24,9 +24,9 @@ import numpy as np
 from utils import get_face_landmarks
 
 # Vars and define preloaded data directory (fix)
-data_dir = 'FaceDectetionModule\Scikit-learn\PreloadedData'
+data_dir = 'FaceDectetionModule\ScikitLearn\PreloadedData'
 output = []
-output_dir = 'FaceDectetionModule\Scikit-learn\SetupData'
+output_dir = 'FaceDectetionModule\ScikitLearn\SetupData'
 output_file = os.path.join(output_dir, "SetupData.txt")
 
 # Check output_dir exists
