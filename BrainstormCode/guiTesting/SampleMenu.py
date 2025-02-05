@@ -17,18 +17,18 @@ class SimpleMenu:
         self.create_button("Button 4", "You pressed Button 4")
 
         # Close button
-        close_button = tk.Button(root, text="Close", command=root.quit, font=("Arial", 12), bg="red", fg="white")
+        close_button = tk.Button(root, text="Close", command=root.quit, font=("Georgia", 12), bg="red", fg="white")
         close_button.pack(pady=10)
 
     def create_button(self, text, message):
         """Helper function to create a button."""
-        button = tk.Button(self.root, text=text, font=("Arial", 12), command=lambda: self.on_button_press(message))
+        button = tk.Button(self.root, text=text, font=("Georgia", 12), command=lambda: self.on_button_press(message))
         button.pack(pady=5)
 
-    def on_button_press(self, message):
-        """Handles button presses."""
-        print(message)  # Output message in console
-        self.label.config(text=message)  # Update label in GUI
+        def on_button_press(self, message):
+            """Handles button presses."""
+            print(message)  # Output message in console
+            self.label.config(text=message)  # Update label in GUI
 
 if __name__ == "__main__":
     root = tk.Tk()

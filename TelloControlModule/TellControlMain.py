@@ -14,13 +14,16 @@
 """
 # Imports
 
-class TellControl:
+# Drone class with all functions required for drone comms
+class TelloControl:
     # Set up a new drone
     def __init__(self):
+        print("set up drone")
         pass
 
     # Transmit drone FPV (just return as a frame, run.py will take care of actually displaying it)
     def get_drone_FPV(self):
+        print("got drone!")
         pass
 
     # All control functions here
