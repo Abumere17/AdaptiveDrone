@@ -8,6 +8,7 @@
     - an image will be captured to be stored in preloaded data starting with "User_"
 
     TODO:
+    - Add images to prompts
     - smoothen out quit function
     - Confrim face expressions are good enough
     - UI: Finalize text
