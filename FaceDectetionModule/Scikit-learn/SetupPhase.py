@@ -12,6 +12,7 @@
     - smoothen out quit function
     - Confrim face expressions are good enough
     - UI: Finalize text
+    - Make this a class
 
 """
 
