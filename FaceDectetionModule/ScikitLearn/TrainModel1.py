@@ -1,6 +1,6 @@
 """
     Himadri Saha
-    TrainModel.py
+    TrainModel1.py
 
     Script for training model using RandomForestClassifier() based on preloaded data.
     Used to predict users face during live phase
@@ -11,6 +11,7 @@
     TODO:
     - Find places to make adjusetments 
     - Test to see if this works
+    # predict_proba
 
 """
 
@@ -22,17 +23,18 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix
 
 # Load data from the text file
-data_file = 'FaceDectetionModule\Scikit-learn\SetupData\SetupData.txt'
+data_file = 'FaceDectetionModule\ScikitLearn\SetupData\SetupData.txt'
 data = np.loadtxt(data_file)
 
 # Split data into features (X) and labels (y)
 X = data[:, :-1]  # Features are all columns except the last one
 y = data[:, -1]   # Labels are the last column
 
-# Split the data into training and testing sets
+# Split the data into training and testing sets, checking if stratification is possible
+stratify_option = y if len(np.unique(y)) <= len(y) * 0.2 else None
 X_train, X_test, y_train, y_test = train_test_split(X,
                                                     y,
-                                                    test_size=0.2,
+                                                    test_size=0.5, # Adjust with the size of the dataset
                                                     random_state=42,
                                                     shuffle=True,
                                                     stratify=y)
@@ -51,5 +53,5 @@ accuracy = accuracy_score(y_test, y_pred)
 print(f"Accuracy: {accuracy * 100:.2f}%")
 print(confusion_matrix(y_test, y_pred))
 
-with open('./model', 'wb') as f: # Verify path
+with open('FaceDectetionModule\ScikitLearn\model', 'wb') as f:
     pickle.dump(rf_classifier, f)

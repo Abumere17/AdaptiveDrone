@@ -1,3 +1,20 @@
+"""
+    Himadri Saha
+    TrainModel2.py
+
+    Script for training model using RandomForestClassifier() based on preloaded data.
+    Used to predict users face during live phase
+    This is the second interation for testing
+
+    Adapted from:
+    https://github.com/computervisioneng/emotion-recognition-python-scikit-learn-mediapipe/tree/main
+
+    TODO:
+    - Find places to make adjusetments 
+    - Test to see if this works
+
+"""
+
 import pickle
 import os
 import numpy as np
@@ -7,9 +24,9 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix
  
 # File path
-file_path = 'FaceDectetionModule/Scikit-learn/SetupData/SetupData.txt'
+file_path = 'FaceDectetionModule\ScikitLearn\SetupData\SetupData.txt'
  
-# ✅ 1. Ensure file exists and is not empty
+# 1. Ensure file exists and is not empty
 if not os.path.exists(file_path):
     print(f"Error: File '{file_path}' does not exist.")
     exit()
@@ -18,7 +35,7 @@ if os.stat(file_path).st_size == 0:
     print(f"Error: File '{file_path}' is empty.")
     exit()
  
-# ✅ 2. Load dataset safely
+# 2. Load dataset safely
 try:
     data = np.loadtxt(file_path, delimiter=" ", encoding="utf-8-sig")
 except ValueError:
