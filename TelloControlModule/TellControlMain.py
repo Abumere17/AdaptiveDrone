@@ -2,23 +2,26 @@
     Daniel Diep
     TellControlMain.py
 
-    Finalized class holding all functions required to communicate with the Tello drone
+    Finalized class holding all functions required to communicate with the Tello drone. Also holds the GUI to help user set up a new drone
     
     TODO:
-    - Setup functions
+    - Setup walkthrough
     - Add all control functions 
     - All photography functions
     - Automated functions
-    - Design this class so that functions can be called easily in "AppMainAndGUI\run.py"
 
 """
 # Imports
 
 # Drone class with all functions required for drone comms
 class TelloControl:
-    # Set up a new drone
+    # Most likely just empty values? What do you need from other modules to make this object work? 
     def __init__(self):
-        print("set up drone")
+        pass
+
+    # GUI to help a user setup a new drone
+    def setup_new_drone(self):
+        print("Setting up new drone...")
         pass
 
     # Transmit drone FPV (just return as a frame, run.py will take care of actually displaying it)
@@ -28,6 +31,7 @@ class TelloControl:
 
     # All control functions here
 
+    # All camera functions here
     def take_photo(self):
         pass
 
@@ -37,4 +41,4 @@ class TelloControl:
 
 # Test class here
 if __name__ == "__main__":
-    drone = TellControl()
+    drone = TelloControl()

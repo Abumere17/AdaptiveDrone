@@ -2,7 +2,7 @@
     Himadri Saha
     FaceControlModule.py
 
-    This is the main script for the module. It runs all other scripts and controls the user interface
+    This acts as main script for the module. It runs all other scripts and controls the user interface
 
     Adapted from:
     https://github.com/computervisioneng/emotion-recognition-python-scikit-learn-mediapipe/tree/main

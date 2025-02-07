@@ -21,18 +21,17 @@ import os
 class SetupPhase:
     # Initialize SetupPhase with required variables
     def __init__(self):
-        self.output_dir = "FaceDectetionModule/Scikit-learn/UserSetupImg"
         self.expressions = {
-            "Open Mouth": "FaceDectetionModule/Scikit-learn/PreloadedData/BOpenMouth",
-            "Teeth Smile": "FaceDectetionModule/Scikit-learn/PreloadedData/CTeethSmile",
-            "Frown": "FaceDectetionModule/Scikit-learn/PreloadedData/DFrown",
-            "Scrunch Mouth Right": "FaceDectetionModule/Scikit-learn/PreloadedData/EScrunchRight",
-            "Scrunch Mouth Left": "FaceDectetionModule/Scikit-learn/PreloadedData/FScrunchLeft",
-            "Puffed Right Cheek": "FaceDectetionModule/Scikit-learn/PreloadedData/GPuffedRightCheek",
-            "Puffed Left Cheek": "FaceDectetionModule/Scikit-learn/PreloadedData/HPuffedLeftCheek",
-            "Eyebrows Furrowed": "FaceDectetionModule/Scikit-learn/PreloadedData/IEyebrowsFurrowed",
-            "Scrunch Mouth Full": "FaceDectetionModule/Scikit-learn/PreloadedData/JScrunchMouthFull",
-            "Raised Eyebrows": "FaceDectetionModule/Scikit-learn/PreloadedData/KRaiseEyebrows"
+            "Open Mouth": "FaceDectetionModule\ScikitLearn\PreloadedData\BOpenMouth",
+            "Teeth Smile": "FaceDectetionModule/ScikitLearn/PreloadedData/CTeethSmile",
+            "Frown": "FaceDectetionModule/ScikitLearn/PreloadedData/DFrown",
+            "Scrunch Mouth Right": "FaceDectetionModule/ScikitLearn/PreloadedData/EScrunchRight",
+            "Scrunch Mouth Left": "FaceDectetionModule/ScikitLearn/PreloadedData/FScrunchLeft",
+            "Puffed Right Cheek": "FaceDectetionModule/ScikitLearn/PreloadedData/GPuffedRightCheek",
+            "Puffed Left Cheek": "FaceDectetionModule/ScikitLearn/PreloadedData/HPuffedLeftCheek",
+            "Eyebrows Furrowed": "FaceDectetionModule/ScikitLearn/PreloadedData/IEyebrowsFurrowed",
+            "Scrunch Mouth Full": "FaceDectetionModule/ScikitLearn/PreloadedData/JScrunchMouthFull",
+            "Raised Eyebrows": "FaceDectetionModule/ScikitLearn/PreloadedData/KRaiseEyebrows"
         }
         self.cap = cv2.VideoCapture(0)
         self.quit_flag = False

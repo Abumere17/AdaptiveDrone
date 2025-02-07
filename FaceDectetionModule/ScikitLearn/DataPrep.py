@@ -50,3 +50,4 @@ if os.path.exists(output_file):
     os.remove(output_file)
 
 np.savetxt(output_file, np.asarray(output))
+print("Created new setup data")
