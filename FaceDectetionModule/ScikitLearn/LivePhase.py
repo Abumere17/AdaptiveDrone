@@ -2,7 +2,7 @@
     Himadri Saha
     LivePhase.py
 
-    This acts as the main script for the module. It runs all other scripts and controls the user interface.
+    This acts as the test script to the control hub. It verifies that the system can predict the live face expression of the user
 
     Updated:
     - Uses predict_proba() to classify with confidence threshold.
@@ -17,8 +17,8 @@ import numpy as np
 from utils import get_face_landmarks
 
 # Vars
-emotions = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']  # Include "A" for Neutral
-CONFIDENCE_THRESHOLD = 0.7  # Adjust this threshold as needed
+emotions = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']  
+CONFIDENCE_THRESHOLD = 0.75  # Adjust 
 
 # Load trained model
 with open('FaceDectetionModule\ScikitLearn\model', 'rb') as f:
@@ -30,7 +30,7 @@ cap = cv2.VideoCapture(0)
 while True:
     ret, frame = cap.read()
     if not ret:
-        break  # Stop if no frame is read
+        break
 
     face_landmarks = get_face_landmarks(frame, draw=True, static_image_mode=False)
     

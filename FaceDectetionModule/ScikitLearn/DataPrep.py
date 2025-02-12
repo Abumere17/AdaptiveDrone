@@ -23,7 +23,7 @@ import cv2
 import numpy as np
 from utils import get_face_landmarks
 
-# Vars and define preloaded data directory (fix)
+# Vars and define preloaded data directory
 data_dir = 'FaceDectetionModule\ScikitLearn\PreloadedData'
 output = []
 output_dir = 'FaceDectetionModule\ScikitLearn\SetupData'
@@ -32,7 +32,7 @@ output_file = os.path.join(output_dir, "SetupData.txt")
 # Check output_dir exists
 os.makedirs(output_dir, exist_ok=True)
 
-# Ititrate through each folder in preloaded data and collect landmarks (fix)
+# Ititrate through each folder in preloaded data and collect landmarks
 for emotion_indx, emotion in enumerate(sorted(os.listdir(data_dir))):
     for image_path_ in os.listdir(os.path.join(data_dir, emotion)):
         image_path = os.path.join(data_dir, emotion, image_path_)
