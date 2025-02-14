@@ -8,18 +8,20 @@
     - Connect new drone
     - New user
 """
-# Import Dep
+
+# Import Dependencies
 import sys
 import os
 import tkinter as tk
 
-# Import classes
+# Ensure Python can find the modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-import tkinter as tk
+
+# Import Classes
 from TelloControlModule.TellControlMain import TelloControl
 from FaceDectetionModule.ScikitLearn.SetupPhase import SetupPhase
 from FaceDectetionModule.ScikitLearn.ControlHub import Control_Hub
-from FaceDectetionModule.ScikitLearn.utils import get_face_landmarks # Why wont this work??
+from FaceDectetionModule.ScikitLearn.utils import get_face_landmarks
 
 class MainMenu:
     def __init__(self, root):
@@ -45,7 +47,7 @@ class MainMenu:
         close_button = tk.Button(root, text="Quit", command=root.quit, font=("Georgia", 12), bg="red", fg="white")
         close_button.pack(pady=10)
 
-    # Create button helper function
+    # Helper function to create buttons
     def create_button(self, text, command):
         button = tk.Button(self.root, text=text, font=("Georgia", 12), command=command)
         button.pack(pady=5)
@@ -59,8 +61,8 @@ class MainMenu:
         self.setup.run_calibration()
 
     def start_flight_mode(self):
-        self.control_screen.start_hub(self.drone)
         print("Launching flight mode...")
+        self.control_screen.start_hub(self.drone)
 
     # Displays help instructions
     def show_help(self):

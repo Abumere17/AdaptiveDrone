@@ -21,7 +21,8 @@
 # Imports
 import pickle
 import cv2
-from utils import get_face_landmarks
+from FaceDectetionModule.ScikitLearn.utils import get_face_landmarks  # ✅ Correct
+
 
 # Vars
 
