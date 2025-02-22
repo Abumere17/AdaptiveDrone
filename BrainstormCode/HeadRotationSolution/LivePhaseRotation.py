@@ -18,10 +18,10 @@
     Look down: Fly down
     Look left: Rotate Left
     Look right: Rotate right
-    Tilt head left: Strafe left*
-    Tilt head right: Strafe right*
-    Smile (Happy): Forward*
-    Frown (Sad): Backward*
+    Tilt head left: Take photo*
+    Tilt head right: Take video*
+    Expression 1: Forward*
+    Expression 2: Backward*
 
     Head tilt brainstorm:
     - Create a horizontal line from the chin
@@ -30,18 +30,22 @@
     - If diffrence is abvove / below thresholds, trigger corresponding tilt
 
     TODO:
-    - Track tilt head
-    - Implement face expression
-    - Connect with drone controller
+    - Track tilt head (Himadri - A)
+    - Implement face expression (Abu - B)
+    - Implement drone control code (Dan - C)
+    - Create signal strength warrnings (Tejas - D)
 
 """
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import cv2
 import mediapipe as mp
 import numpy as np
 import time
 
 class Rotation_Hub:
-    def __init__(self, droneControler):
+    def __init__(self):
         self.face_mesh = mp.solutions.face_mesh.FaceMesh(min_detection_confidence=0.5, min_tracking_confidence=0.5)
         self.mp_drawing = mp.solutions.drawing_utils
         self.drawing_spec = self.mp_drawing.DrawingSpec(thickness=1, circle_radius=1)
@@ -143,9 +147,15 @@ class Rotation_Hub:
         self.cap.release()
         cv2.destroyAllWindows()
 
-    def send_command(self):
+    def takeoff_land(self):
+        pass
+
+    def video_stream(self):
+        pass
+
+    def cleanup(self):
         pass
 
 if __name__ == "__main__":
-    rotation_hub = Rotation_Hub(None) # None for testing
+    rotation_hub = Rotation_Hub()
     rotation_hub.start_rotation()
