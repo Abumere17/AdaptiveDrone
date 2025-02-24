@@ -154,7 +154,6 @@ class DroneController:
         except Exception as e:
             print(f"Error performing cleanup: {e}")
 
-
 if __name__ == "__main__":
     # Initialize the GUI
     gui = DroneController()
