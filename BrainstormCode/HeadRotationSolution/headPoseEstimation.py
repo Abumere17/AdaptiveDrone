@@ -3,9 +3,10 @@
 
     Added:
     - Head tilt detection (existing)
-    - Quick double nod detection for left, right, up, and down using a state machine.
-      The operator must nod in a direction (beyond a small angle threshold), return to neutral,
-      then nod again in the same direction within a short time window.
+    - Quick nod detection for left, right, up, and down.
+      The operator only needs to have their head angle within the candidate range 
+      (defined by NOD_THRESHOLD_MIN and NOD_THRESHOLD_MAX) to output the nod direction.
+    - Visual gauges are drawn to help the user see the candidate zones.
 """
 
 import cv2
@@ -15,19 +16,14 @@ import time
 
 # Constants
 TILT_THRESHOLD = 30         # Pixel threshold for head tilt detection
-DOUBLE_NOD_TIME = 0.8       # Seconds allowed between nods for a double nod gesture
-NOD_THRESHOLD_MIN = 5       # Minimum angle (in degrees) for a nod candidate
-NOD_THRESHOLD_MAX = 10      # Maximum angle (in degrees) for a nod candidate
-
-# Global variables for double nod detection state machine
-nod_state = "neutral"       # States: "neutral", "first_nod", "neutral_returned"
-candidate_direction = None
-nod_timestamp = 0
+NOD_THRESHOLD_MIN = 5       # Minimum angle (in degrees) for nod candidate
+NOD_THRESHOLD_MAX = 10      # Maximum angle (in degrees) for nod candidate
+SCALE = 10                  # Pixels per degree for visual gauges
 
 def get_nod_candidate(x_angle, y_angle):
     """
-    Determine if the current head angles qualify as a nod candidate.
-    Returns a string indicating the nod direction or None if in neutral.
+    Return a string indicating the nod candidate direction if the head angle 
+    is within the candidate range, otherwise return None.
     """
     candidate = None
     # Check yaw for left/right nods
@@ -60,11 +56,11 @@ while cap.isOpened():
 
     start = time.time()
 
-    # Flip the image horizontally for a selfie-view display and convert BGR to RGB
+    # Flip image for selfie view and convert BGR to RGB
     image = cv2.cvtColor(cv2.flip(image, 1), cv2.COLOR_BGR2RGB)
     image.flags.writeable = False
 
-    # Process the image with MediaPipe Face Mesh
+    # Process with MediaPipe Face Mesh
     results = face_mesh.process(image)
     image.flags.writeable = True
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
@@ -73,11 +69,11 @@ while cap.isOpened():
 
     # Default texts for display
     head_pose_text = ""
-    double_nod_text = ""
+    nod_text = ""
 
     if results.multi_face_landmarks:
         for face_landmarks in results.multi_face_landmarks:
-            # Build a dictionary of all landmark coordinates (x, y, z)
+            # Build dictionary of landmark coordinates
             landmarks_dict = {}
             for idx, lm in enumerate(face_landmarks.landmark):
                 x, y = int(lm.x * img_w), int(lm.y * img_h)
@@ -86,7 +82,7 @@ while cap.isOpened():
             # Prepare arrays for head pose estimation using selected landmarks
             face_2d = []
             face_3d = []
-            indices_for_pose = [33, 263, 1, 61, 291, 199]  # Example landmarks
+            indices_for_pose = [33, 263, 1, 61, 291, 199]  # Example indices
             for i in indices_for_pose:
                 if i in landmarks_dict:
                     x, y, z = landmarks_dict[i]
@@ -99,7 +95,7 @@ while cap.isOpened():
             face_2d = np.array(face_2d, dtype=np.float64)
             face_3d = np.array(face_3d, dtype=np.float64)
 
-            # Define the camera matrix
+            # Camera matrix and distortion coefficients
             focal_length = img_w
             cam_matrix = np.array([
                 [focal_length, 0, img_w / 2],
@@ -113,14 +109,14 @@ while cap.isOpened():
                 face_3d, face_2d, cam_matrix, dist_matrix
             )
 
-            # Get rotation matrix and decompose it to get angles (in degrees)
+            # Decompose rotation matrix to get head angles (in degrees)
             rmat, _ = cv2.Rodrigues(rot_vec)
             angles, _, _, _, _, _ = cv2.RQDecomp3x3(rmat)
-            x_angle = angles[0] * 360  # Pitch: up/down
-            y_angle = angles[1] * 360  # Yaw: left/right
+            x_angle = angles[0] * 360  # Pitch (up/down)
+            y_angle = angles[1] * 360  # Yaw (left/right)
             z_angle = angles[2] * 360  # Roll
 
-            # Regular head orientation detection (for continuous commands)
+            # Regular head orientation detection for continuous commands
             if y_angle < -10:
                 head_pose_text = "Looking Left"
             elif y_angle > 10:
@@ -157,45 +153,15 @@ while cap.isOpened():
                 cv2.putText(image, tilt_text, (20, 100),
                             cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 0), 2)
 
-            # --- Double Nod Detection State Machine ---
-            current_time = time.time()
+            # --- Immediate Nod Detection Based on Visual Gauge ---
+            # Determine nod candidate from current head angles
             candidate = get_nod_candidate(x_angle, y_angle)
+            if candidate is not None:
+                nod_text = candidate
+            else:
+                nod_text = ""
 
-            # Check timeouts in state transitions
-            if nod_state in ["first_nod", "neutral_returned"]:
-                if current_time - nod_timestamp > DOUBLE_NOD_TIME:
-                    nod_state = "neutral"
-                    candidate_direction = None
-
-            # State machine logic:
-            if nod_state == "neutral":
-                if candidate is not None:
-                    nod_state = "first_nod"
-                    candidate_direction = candidate
-                    nod_timestamp = current_time
-            elif nod_state == "first_nod":
-                # Wait for the head to return to neutral
-                if candidate is None:
-                    nod_state = "neutral_returned"
-                    nod_timestamp = current_time  # reset timestamp on neutral return
-                # If candidate changes before neutral, update candidate direction
-                elif candidate != candidate_direction:
-                    candidate_direction = candidate
-                    nod_timestamp = current_time
-            elif nod_state == "neutral_returned":
-                if candidate is not None:
-                    if candidate == candidate_direction:
-                        # Valid double nod detected within time window
-                        double_nod_text = f"Double {candidate_direction}"
-                        nod_state = "neutral"
-                        candidate_direction = None
-                    else:
-                        # Different candidate detected; restart sequence with new candidate
-                        nod_state = "first_nod"
-                        candidate_direction = candidate
-                        nod_timestamp = current_time
-
-            # Display the regular head pose text and double nod result
+            # Display the regular head pose text and nod result
             cv2.putText(image, head_pose_text, (20, 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
             cv2.putText(image, "x: " + str(np.round(x_angle, 2)), (500, 50),
@@ -204,10 +170,72 @@ while cap.isOpened():
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             cv2.putText(image, "z: " + str(np.round(z_angle, 2)), (500, 150),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-
-            if double_nod_text:
-                cv2.putText(image, double_nod_text, (20, 200),
+            if nod_text:
+                cv2.putText(image, nod_text, (20, 200),
                             cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 2)
+
+            # --- Draw Visual Gauges for Nodding Ranges ---
+            # Horizontal gauge for yaw (left/right nod)
+            gauge_width = int(NOD_THRESHOLD_MAX * SCALE * 2)
+            gauge_height = 20
+            gauge_center_x = img_w // 2
+            gauge_y = img_h - 50
+            # Background gauge
+            cv2.rectangle(image, (gauge_center_x - gauge_width // 2, gauge_y),
+                          (gauge_center_x + gauge_width // 2, gauge_y + gauge_height),
+                          (50, 50, 50), -1)
+            # Center line
+            cv2.line(image, (gauge_center_x, gauge_y),
+                     (gauge_center_x, gauge_y + gauge_height), (255, 255, 255), 2)
+            # Candidate zone for Nod Right
+            cv2.rectangle(
+                image,
+                (gauge_center_x + int(NOD_THRESHOLD_MIN * SCALE), gauge_y),
+                (gauge_center_x + int(NOD_THRESHOLD_MAX * SCALE), gauge_y + gauge_height),
+                (0, 255, 0), -1
+            )
+            # Candidate zone for Nod Left
+            cv2.rectangle(
+                image,
+                (gauge_center_x - int(NOD_THRESHOLD_MAX * SCALE), gauge_y),
+                (gauge_center_x - int(NOD_THRESHOLD_MIN * SCALE), gauge_y + gauge_height),
+                (0, 255, 0), -1
+            )
+            # Current yaw marker
+            current_offset = int(y_angle * SCALE)
+            marker_x = gauge_center_x + current_offset
+            cv2.circle(image, (marker_x, gauge_y + gauge_height // 2), 8, (0, 0, 255), -1)
+
+            # Vertical gauge for pitch (up/down nod)
+            gauge_height_pitch = int(NOD_THRESHOLD_MAX * SCALE * 2)
+            gauge_width_pitch = 20
+            gauge_center_y = img_h // 2
+            gauge_x = 50
+            # Background gauge
+            cv2.rectangle(image, (gauge_x, gauge_center_y - gauge_height_pitch // 2),
+                          (gauge_x + gauge_width_pitch, gauge_center_y + gauge_height_pitch // 2),
+                          (50, 50, 50), -1)
+            # Center line
+            cv2.line(image, (gauge_x, gauge_center_y),
+                     (gauge_x + gauge_width_pitch, gauge_center_y), (255, 255, 255), 2)
+            # Candidate zone for Nod Up (looking up)
+            cv2.rectangle(
+                image,
+                (gauge_x, gauge_center_y - int(NOD_THRESHOLD_MAX * SCALE)),
+                (gauge_x + gauge_width_pitch, gauge_center_y - int(NOD_THRESHOLD_MIN * SCALE)),
+                (0, 255, 0), -1
+            )
+            # Candidate zone for Nod Down
+            cv2.rectangle(
+                image,
+                (gauge_x, gauge_center_y + int(NOD_THRESHOLD_MIN * SCALE)),
+                (gauge_x + gauge_width_pitch, gauge_center_y + int(NOD_THRESHOLD_MAX * SCALE)),
+                (0, 255, 0), -1
+            )
+            # Current pitch marker (note: higher pitch means up, so subtract offset)
+            current_offset_pitch = int(x_angle * SCALE)
+            marker_y = gauge_center_y - current_offset_pitch
+            cv2.circle(image, (gauge_x + gauge_width_pitch // 2, marker_y), 8, (0, 0, 255), -1)
 
             end = time.time()
             total_time = end - start
