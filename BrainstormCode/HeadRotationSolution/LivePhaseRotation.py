@@ -50,7 +50,6 @@ class Rotation_Hub:
         self.mp_drawing = mp.solutions.drawing_utils
         self.drawing_spec = self.mp_drawing.DrawingSpec(thickness=1, circle_radius=1)
         self.cap = cv2.VideoCapture(0)
-        self.droneControler = droneControler
 
     def start_rotation(self):
         # Main camera loop
