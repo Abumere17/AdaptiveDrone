@@ -11,6 +11,7 @@ from PIL import Image, ImageTk
 from djitellopy import tello
 from TelloControlModule.flight_commands import start_flying, stop_flying
 from TelloControlModule.indicators import Indicators
+from wifi_monitor import WiFiMonitor
  
 class Rotation_Hub:
     def __init__(self):
@@ -31,6 +32,10 @@ class Rotation_Hub:
         self.drone_controller.streamon()
         self.drone_controller.speed = 50
  
+  # Initialize Wi-Fi Monitor
+        self.wifi_monitor = WiFiMonitor()
+        self.wifi_monitor.start_monitoring()
+
         # Set dimensions for display
         self.h = 480
         self.w = 720
