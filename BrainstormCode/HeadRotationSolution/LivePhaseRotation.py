@@ -32,7 +32,7 @@ class Rotation_Hub:
         self.drone_controller.streamon()
         self.drone_controller.speed = 50
  
-  # Initialize Wi-Fi Monitor
+        # Initialize Wi-Fi Monitor
         self.wifi_monitor = WiFiMonitor()
         self.wifi_monitor.start_monitoring()
 
