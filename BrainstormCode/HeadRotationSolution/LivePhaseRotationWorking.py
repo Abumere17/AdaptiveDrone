@@ -2,6 +2,17 @@
     LivePhaseRotation.py
     
     Acts as the main controller for the drone using head rotation commands
+
+    Controls:
+    Look up: fly up
+    look down: fly down
+    look left: rotate left
+    look right: rotate right
+    nod up: forward
+    nod down: backwards
+
+    TODO:
+    - add photography controls
 '''
 import os
 import sys
