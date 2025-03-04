@@ -1,3 +1,8 @@
+'''
+    LivePhaseRotation.py
+    
+    Acts as the main controller for the drone using head rotation commands
+'''
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
@@ -11,7 +16,6 @@ from PIL import Image, ImageTk
 from djitellopy import tello
 from TelloControlModule.flight_commands import start_flying, stop_flying
 from TelloControlModule.indicators import Indicators
-
 
 class Rotation_Hub:
     def __init__(self):
@@ -227,7 +231,6 @@ class Rotation_Hub:
         """Start updating both video streams and run the Tkinter main loop."""
         self.update_head_pose()
         self.update_drone_stream()
-        self.takeoff_land()
         self.root.mainloop()
 
     def cleanup(self):
