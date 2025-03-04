@@ -49,6 +49,11 @@ class Rotation_Hub:
         # Label for Tello video stream
         self.drone_stream_lbl = Label(self.video_frame)
         self.drone_stream_lbl.pack(side="right", padx=10, pady=10)
+
+        # Takeoff/Land Button
+        self.takeoff_land_btn = Button(self.root, text="Takeoff / Land", command=self.takeoff_land, height=2, width=15)
+        self.takeoff_land_btn.pack(pady=10)
+
  
         self.indicators = Indicators(self.drone_controller, self.w, self.h)
  
@@ -194,7 +199,7 @@ class Rotation_Hub:
         """Start updating both video streams and run the Tkinter main loop."""
         self.update_head_pose()
         self.update_drone_stream()
-        self.takeoff_land()
+        # self.takeoff_land()
         self.root.mainloop()
  
     def cleanup(self):
