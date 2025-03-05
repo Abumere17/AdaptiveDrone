@@ -1,19 +1,13 @@
 """
-    Himadri Saha
-    SetupPhase.py
+SetupPhase.py - Runs the Setup phase to calibrate user facial expressions.
 
-    Runs the Setup phase to calibrate user faical expressions to trained model.
-    On startup, all previous user data will be deleted
-    User will iritrate through each control expresssion: 
-    - an image will be captured to be stored in preloaded data starting with "User_"
+Author: Himadri Saha
 
-    TODO:
-    - Add images to prompts
-    - smoothen out quit function
-    - Confrim face expressions are good enough
-    - UI: Finalize text
+Updates:
+- Removed the process of clearing user data on each run.
 
 """
+
 # Imports
 import cv2
 import os
@@ -22,7 +16,7 @@ class SetupPhase:
     # Initialize SetupPhase with required variables
     def __init__(self):
         self.expressions = {
-            "Open Mouth": "FaceDectetionModule\ScikitLearn\PreloadedData\BOpenMouth",
+            "Open Mouth": "FaceDectetionModule/ScikitLearn/PreloadedData/BOpenMouth",
             "Teeth Smile": "FaceDectetionModule/ScikitLearn/PreloadedData/CTeethSmile",
             "Frown": "FaceDectetionModule/ScikitLearn/PreloadedData/DFrown",
             "Scrunch Mouth Right": "FaceDectetionModule/ScikitLearn/PreloadedData/EScrunchRight",
@@ -35,23 +29,6 @@ class SetupPhase:
         }
         self.cap = cv2.VideoCapture(0)
         self.quit_flag = False
-
-        # Delete all previous user images
-        self.clear_user_data()
-
-    def clear_user_data(self):
-        """Deletes all previously stored user calibration images."""
-        for folder_path in self.expressions.values():
-            if not os.path.exists(folder_path):
-                os.makedirs(folder_path)  # Ensure directory exists
-
-            for filename in os.listdir(folder_path):
-                if filename.startswith("User_"):
-                    file_path = os.path.join(folder_path, filename)
-                    os.remove(file_path)
-                    print(f"Deleted: {file_path}")
-
-        print("Cleared all past user data.")
 
     def display_prompt(self, frame, expression):
         """Overlays a prompt on the video feed to guide the user."""
@@ -110,8 +87,8 @@ class SetupPhase:
         """Releases camera resources and closes OpenCV windows."""
         self.cap.release()
         cv2.destroyAllWindows()
-        
+
 # Test class
 if __name__ == "__main__":
     setup = SetupPhase()
-    setup.clear_user_data()
+    setup.run_calibration()
