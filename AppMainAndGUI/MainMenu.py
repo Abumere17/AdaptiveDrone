@@ -2,14 +2,14 @@ import sys
 import os
 import tkinter as tk
 from tkinter import messagebox
-
+#New line
 # Ensure Python can find the modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # Import Classes
 from TelloControlModule.TellControlMain import TelloControl
 from FaceDectetionModule.ScikitLearn.SetupPhase import SetupPhase
-from FaceDectetionModule.ScikitLearn.ControlHub import Control_Hub
+from FaceDectetionModule.ScikitLearn.ControlHub import Control_Hub 
 from FaceDectetionModule.ScikitLearn.utils import get_face_landmarks
 
 class Rotation_Hub:
