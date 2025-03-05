@@ -13,6 +13,8 @@
 
     TODO:
     - add photography controls
+    - wifi connection GUI
+    - Failsafe for broken frames
 '''
 import os
 import sys
