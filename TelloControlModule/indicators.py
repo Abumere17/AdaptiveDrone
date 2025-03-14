@@ -15,19 +15,24 @@ class Indicators:
 
         # Initialize the batter level as the drones current battery level
         self.battery = self.drone.get_battery()
-
+        
         # Start a thread to update the indicator values while self.update is True
-        threading.Thread(target=lambda: self.update_indicators()).start()
+        self.update_thread = threading.Thread(target=self.update_indicators)
+        self.update_thread.start()
 
     def update_indicators(self) -> None:
         """Set update to True and continuously update the indicator values by calling the drones
         associated methods for getting that indicators respective current value reading."""
         self.update = True
         while self.update:
-            print("self.drone is true, updating indicators")
             self.battery = self.drone.get_battery()
-            print(f"self.battery = {self.battery}")
             time.sleep(1)
+
+    def shutdown(self) -> None:
+        """Stops indicator updates and safely terminates the update thread."""
+        self.update = False
+        self.update_thread.join()  # Ensures the thread stops before proceeding
+        print("Indicators: Shutdown complete.")
 
     def draw_battery_indicator(self, frame) -> None:
         """Draw the base battery shape and then check the battery level and draw the appropriate number of colored

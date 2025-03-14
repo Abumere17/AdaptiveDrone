@@ -12,6 +12,7 @@ from djitellopy import tello
 from TelloControlModule.flight_commands import start_flying, stop_flying
 from TelloControlModule.indicators import Indicators
 from wifi_monitor import WiFiMonitor
+from BrainstormCode.HeadRotationSolution.TellDroneTest import TestTello
  
 class Rotation_Hub:
     def __init__(self):
