@@ -374,7 +374,7 @@ class Rotation_Hub:
             self.root.after(10, self.update_head_pose)
 
             if time.time() - self.last_detected_time > 5:
-                print("No face detected for 15 seconds. Landing the drone and exiting...")
+                print("No face detected for 5 seconds. Landing the drone and exiting...")
                 self.drone_controller.land()
                 self.cleanup()
                 exit(0)
