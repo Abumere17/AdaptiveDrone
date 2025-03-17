@@ -1,10 +1,14 @@
 """
-    name
+    Abumere Okhihan
     MainMenu.py
 
     description 
 
     TODO:
+    - Ensure that rotation hub does not just start up right away
+    - Fix bugs like the 3 windows popping up, and make it so that main menu screen closes once another screen is open
+    - Remove setup phase (new user), we arnt using that
+    - Finish creating help screen
     - 
 
 """
@@ -21,21 +25,8 @@ from TelloControlModule.TellControlMain import TelloControl
 from FaceDectetionModule.ScikitLearn.SetupPhase import SetupPhase
 from FaceDectetionModule.ScikitLearn.ControlHub import Control_Hub 
 from FaceDectetionModule.ScikitLearn.utils import get_face_landmarks
- 
-class Rotation_Hub:
-    """
-    Class responsible for handling flight mode operations.
-    """
-    def __init__(self, drone):
-        self.drone = drone
- 
-    def start(self):
-        if self.drone.is_connected():
-            print("Rotation Hub initialized. Ready for flight.")
-            # Add flight control logic here
-        else:
-            print("Error: No drone connected!")
- 
+from BrainstormCode.HeadRotationSolution.LivePhaseRotationWorking import Rotation_Hub
+
 class MainMenu:
     def __init__(self, root):
         self.root = root
