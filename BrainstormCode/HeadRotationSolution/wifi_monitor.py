@@ -61,3 +61,14 @@ class WiFiMonitor:
     def stop_monitoring(self):
         """Stops the monitoring thread."""
         self.running = False
+
+if __name__ == "__main__":
+    wifiObject = WiFiMonitor()
+    wifiObject.start_monitoring()
+
+    try:
+        while True:
+            time.sleep(2)  # Keep the main thread running while WiFi monitoring runs in background
+    except KeyboardInterrupt:
+        print("\nStopping WiFi monitoring...")
+        wifiObject.stop_monitoring()

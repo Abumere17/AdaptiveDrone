@@ -1,228 +1,81 @@
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 import cv2
 import time
 import threading
+from BrainstormCode.HeadRotationSolution.wifi_monitor import WiFiMonitor
 
 class Indicators:
     def __init__(self, drone, w, h):
-
-        # Initialize a variable to start/stop our indicator updates
+        # Initialize a variable to start/stop indicator updates
         self.update = False
 
-        # Initialize the width, height, and drone for updates to work properly
+        # Initialize dimensions and drone object
         self.w = w
         self.h = h
         self.drone = drone
 
-        # Initialize the batter level as the drones current battery level
+        # Initialize battery and Wi-Fi monitor
         self.battery = self.drone.get_battery()
-        
-        # Start a thread to update the indicator values while self.update is True
+        self.wifi_monitor = WiFiMonitor()
+        self.wifi_monitor.start_monitoring()
+        self.signal_strength = 0  # Default signal strength
+
+        # Start update thread
         self.update_thread = threading.Thread(target=self.update_indicators)
         self.update_thread.start()
 
     def update_indicators(self) -> None:
-        """Set update to True and continuously update the indicator values by calling the drones
-        associated methods for getting that indicators respective current value reading."""
+        """Continuously update battery level and Wi-Fi signal strength."""
         self.update = True
         while self.update:
             self.battery = self.drone.get_battery()
+            self.signal_strength = self.wifi_monitor.signal_strength or 0
             time.sleep(1)
 
     def shutdown(self) -> None:
-        """Stops indicator updates and safely terminates the update thread."""
+        """Stops indicator updates and safely terminates threads."""
         self.update = False
-        self.update_thread.join()  # Ensures the thread stops before proceeding
+        self.wifi_monitor.stop_monitoring()
+        self.update_thread.join()
         print("Indicators: Shutdown complete.")
 
     def draw_battery_indicator(self, frame) -> None:
-        """Draw the base battery shape and then check the battery level and draw the appropriate number of colored
-        bars in the battery shape for that battery level percentages respective representation.
+        """Draw battery indicator with percentage representation."""
+        cv2.rectangle(frame, (10, 30), (60, 50), (255, 255, 255), -1)
+        cv2.rectangle(frame, (60, 35), (65, 45), (255, 255, 255), -1)
 
-        Notes:
-            - The start and end positions for drawing the battery are hardcoded as a calculation taken with the frame's
-              width/height to position the drawn indicator in the upper left corner of the displayed video stream.
+        color = (0, 255, 0) if self.battery >= 70 else (0, 255, 255) if self.battery >= 40 else (0, 0, 255)
+        battery_level = self.battery // 10
 
-            - The batteries form is drawn in the color white (255, 255, 255) and has a thickness of -1 to have the
-              rectangles filled with this color.
+        for i in range(battery_level):
+            cv2.line(frame, (15 + (i * 5), 32), (15 + (i * 5), 48), color, 2)
 
-            - The battery level bars are drawn as lines within the battery form. These bars are positioned within this
-              form such that they are separated by 5 pixels between each bar in the form along its x-axis. These bars
+        cv2.putText(frame, f"{self.battery}%", (70, 45), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
 
-            - All bars are drawn with a thickness value of 2
-        """
+    def draw_wifi_indicator(self, frame) -> None:
+        """Draw Wi-Fi signal strength indicator below the battery indicator."""
+        x_start, y_start = 10, 90  # Position of Wi-Fi indicator
+        bar_height = 5
+        bar_width = 15
+        max_bars = 5
 
-        # Draw the two rectangle that form the batteries body and positive terminal (for the look we want; only aesthetic)
-        cv2.rectangle(frame, (self.w // 128 + 3, self.h // 32 + 29), (self.w // 128 + 52, self.h // 32 + 51),
-                      (255, 255, 255), -1)
-        cv2.rectangle(frame, (self.w // 128 + 52, self.h // 32 + 35), (self.w // 128 + 55, self.h // 32 + 45),
-                      (255, 255, 255),
-                      -1)
-
-        # Check if the battery level is above 70%
-        if self.battery >= 70:
-
-            # If above 70%, color the bars green.
+        # Determine color based on signal strength
+        if self.signal_strength >= 90:
             color = (0, 255, 0)
-
-            # Check if the battery is equal to 100%
-            if self.battery == 100:
-
-                # 10 lines for 10 percent intervals between no charge 0% and full charge 100%
-                # So, each line represents a 10% fraction of the total possible battery percentage and the battery is full.
-                cv2.line(frame, (self.w // 128 + 5, self.h // 32 + 30), (self.w // 128 + 5, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 10, self.h // 32 + 30), (self.w // 128 + 10, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 15, self.h // 32 + 30), (self.w // 128 + 15, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 20, self.h // 32 + 30), (self.w // 128 + 20, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 25, self.h // 32 + 30), (self.w // 128 + 25, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 30, self.h // 32 + 30), (self.w // 128 + 30, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 35, self.h // 32 + 30), (self.w // 128 + 35, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 40, self.h // 32 + 30), (self.w // 128 + 40, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 45, self.h // 32 + 30), (self.w // 128 + 45, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 50, self.h // 32 + 30), (self.w // 128 + 50, self.h // 32 + 50), color,
-                         2)
-
-            # If the battery is between 90% and 100% draw 9 green lines to represent this.
-            elif 90 <= self.battery < 100:
-                # 9 lines
-                cv2.line(frame, (self.w // 128 + 5, self.h // 32 + 30), (self.w // 128 + 5, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 10, self.h // 32 + 30), (self.w // 128 + 10, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 15, self.h // 32 + 30), (self.w // 128 + 15, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 20, self.h // 32 + 30), (self.w // 128 + 20, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 25, self.h // 32 + 30), (self.w // 128 + 25, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 30, self.h // 32 + 30), (self.w // 128 + 30, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 35, self.h // 32 + 30), (self.w // 128 + 35, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 40, self.h // 32 + 30), (self.w // 128 + 40, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 45, self.h // 32 + 30), (self.w // 128 + 45, self.h // 32 + 50), color,
-                         2)
-            # If between 80% and 90% draw 8 Green lines to represent this.
-            elif 80 <= self.battery < 90:
-                # 8 lines
-                cv2.line(frame, (self.w // 128 + 5, self.h // 32 + 30), (self.w // 128 + 5, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 10, self.h // 32 + 30), (self.w // 128 + 10, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 15, self.h // 32 + 30), (self.w // 128 + 15, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 20, self.h // 32 + 30), (self.w // 128 + 20, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 25, self.h // 32 + 30), (self.w // 128 + 25, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 30, self.h // 32 + 30), (self.w // 128 + 30, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 35, self.h // 32 + 30), (self.w // 128 + 35, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 40, self.h // 32 + 30), (self.w // 128 + 40, self.h // 32 + 50), color,
-                         2)
-            # If between 70% and 80% draw 7 Green lines to represent this.
-            else:
-                # 7 lines
-                cv2.line(frame, (self.w // 128 + 5, self.h // 32 + 30), (self.w // 128 + 5, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 10, self.h // 32 + 30), (self.w // 128 + 10, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 15, self.h // 32 + 30), (self.w // 128 + 15, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 20, self.h // 32 + 30), (self.w // 128 + 20, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 25, self.h // 32 + 30), (self.w // 128 + 25, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 30, self.h // 32 + 30), (self.w // 128 + 30, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 35, self.h // 32 + 30), (self.w // 128 + 35, self.h // 32 + 50), color,
-                         2)
-
-        # Check if the battery level is between 40% and 70% capacity.
-        elif 40 <= self.battery < 70:
-
-            # If it is, then set the bar color to yellow.
+        elif self.signal_strength >= 70:
             color = (0, 255, 255)
-
-            # If greater than 60% but less than 70% draw 6 yellow lines.
-            if self.battery >= 60:
-                # 6 lines
-                cv2.line(frame, (self.w // 128 + 5, self.h // 32 + 30), (self.w // 128 + 5, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 10, self.h // 32 + 30), (self.w // 128 + 10, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 15, self.h // 32 + 30), (self.w // 128 + 15, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 20, self.h // 32 + 30), (self.w // 128 + 20, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 25, self.h // 32 + 30), (self.w // 128 + 25, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 30, self.h // 32 + 30), (self.w // 128 + 30, self.h // 32 + 50), color,
-                         2)
-
-            # if between 50% and 60% draw 5 yellow lines.
-            elif 50 <= self.battery < 60:
-                # 5 lines
-                cv2.line(frame, (self.w // 128 + 5, self.h // 32 + 30), (self.w // 128 + 5, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 10, self.h // 32 + 30), (self.w // 128 + 10, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 15, self.h // 32 + 30), (self.w // 128 + 15, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 20, self.h // 32 + 30), (self.w // 128 + 20, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 25, self.h // 32 + 30), (self.w // 128 + 25, self.h // 32 + 50), color,
-                         2)
-
-            # if between 40% and 50% draw 4 yellow lines.
-            else:
-                cv2.line(frame, (self.w // 128 + 5, self.h // 32 + 30), (self.w // 128 + 5, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 10, self.h // 32 + 30), (self.w // 128 + 10, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 15, self.h // 32 + 30), (self.w // 128 + 15, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 20, self.h // 32 + 30), (self.w // 128 + 20, self.h // 32 + 50), color,
-                         2)
-
-        # Check if the battery is less than 40% capacity.
         else:
-
-            # If so, set the color to red.
             color = (0, 0, 255)
 
-            # If the battery is between 30% and 40% draw 3 red lines.
-            if self.battery >= 30:
-                cv2.line(frame, (self.w // 128 + 5, self.h // 32 + 30), (self.w // 128 + 5, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 10, self.h // 32 + 30), (self.w // 128 + 10, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 15, self.h // 32 + 30), (self.w // 128 + 15, self.h // 32 + 50), color,
-                         2)
-
-            # If the battery is between 20% and 30% draw 2 red lines.
-            elif 20 <= self.battery < 30:
-                cv2.line(frame, (self.w // 128 + 5, self.h // 32 + 30), (self.w // 128 + 5, self.h // 32 + 50), color,
-                         2)
-                cv2.line(frame, (self.w // 128 + 10, self.h // 32 + 30), (self.w // 128 + 10, self.h // 32 + 50), color,
-                         2)
-
-            # If the battery is between 10% and 20% draw 3 red lines.
+        # Draw Wi-Fi bars
+        for i in range(max_bars):
+            bar_y = y_start - (i * (bar_height + 2))
+            if self.signal_strength >= (i + 1) * 20:
+                cv2.rectangle(frame, (x_start, bar_y), (x_start + bar_width, bar_y + bar_height), color, -1)
             else:
-                cv2.line(frame, (self.w // 128 + 5, self.h // 32 + 30), (self.w // 128 + 5, self.h // 32 + 50), color,
-                         2)
+                cv2.rectangle(frame, (x_start, bar_y), (x_start + bar_width, bar_y + bar_height), (255, 255, 255), 1)
 
-        # Write the current batter level as a percentage text next to the indicator.
-        cv2.putText(frame, f"{self.battery} %", (self.w // 128 + 60, self.h // 32 + 45), cv2.FONT_HERSHEY_COMPLEX, .5,
-                    (43, 157, 255),
-                    1)
+        # Display signal strength percentage
+        cv2.putText(frame, f"{self.signal_strength}%", (x_start + 25, y_start - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)

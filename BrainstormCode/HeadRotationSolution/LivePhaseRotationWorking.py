@@ -403,9 +403,15 @@ class Rotation_Hub:
 
     def update_drone_stream(self):
         """Capture from the Tello video stream and update the Tkinter label."""
+        # Get drone FPV
         frame = self.drone_controller.get_frame_read().frame
         frame = cv2.resize(frame, (self.w, self.h))
+
+        # Draw indicators
         self.indicators.draw_battery_indicator(frame)
+        self.indicators.draw_wifi_indicator(frame)
+
+        # Format frame
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img_pil = Image.fromarray(frame_rgb)
         imgtk = ImageTk.PhotoImage(image=img_pil)
@@ -449,6 +455,6 @@ class Rotation_Hub:
             print(f"Error during cleanup: {e}")
 
 if __name__ == "__main__":
-    testTello = True # Change to false for testing when a drone is connected
+    testTello = False # Change to false for testing when a drone is connected
     rotation_hub = Rotation_Hub(testTello)
     rotation_hub.run()
