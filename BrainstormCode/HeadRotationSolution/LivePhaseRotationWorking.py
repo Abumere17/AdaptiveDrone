@@ -14,7 +14,6 @@
 
     TODO:
     - add photography controls
-    - wifi connection GUI
     - Add keyboard commands
 '''
 import os
