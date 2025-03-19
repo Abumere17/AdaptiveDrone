@@ -30,7 +30,7 @@ from djitellopy import tello
 from TelloControlModule.flight_commands import start_flying, stop_flying
 from TelloControlModule.indicators import Indicators
 from BrainstormCode.HeadRotationSolution.TellDroneTest import TestTello
-
+from TelloControlModule.take_pictures import take_picture
 # Constants
 TILT_THRESHOLD = 30         # Pixel threshold for head tilt detection
 NOD_THRESHOLD_MIN = 5       # Minimum angle (in degrees) for nod candidate
@@ -244,7 +244,7 @@ class Rotation_Hub:
                     elif nod_text == 'Nod Left':
                         new_command = "neutral" # change
                     elif nod_text == 'Nod Right':
-                        new_command = "neutral" # change
+                        new_command = "take photo" # change
                 else:
                     nod_text = ""
 
@@ -255,6 +255,10 @@ class Rotation_Hub:
                     try:
                         if new_command == "neutral":
                             stop_flying(None, self.drone_controller)
+                        elif new_command == "take photo":
+                            print("Taking Photo.")
+                            frame = self.drone_controller.get_frame_read().frame
+                            take_picture(frame)
                         else:
                             start_flying(None, new_command, self.drone_controller,
                                         self.drone_controller.speed)
@@ -372,11 +376,11 @@ class Rotation_Hub:
             print("No landmarks dectected")
             self.root.after(10, self.update_head_pose)
 
-            if time.time() - self.last_detected_time > 5:
-                print("No face detected for 5 seconds. Landing the drone and exiting...")
-                self.drone_controller.land()
-                self.cleanup()
-                exit(0)
+           # if time.time() - self.last_detected_time > 5:
+              #  print("No face detected for 5 seconds. Landing the drone and exiting...")
+               # self.drone_controller.land()
+             #   self.cleanup()
+              #  exit(0)
 
     def error_window(self):
         """Displays an error window when face landmarks are not detected."""
@@ -454,6 +458,6 @@ class Rotation_Hub:
             print(f"Error during cleanup: {e}")
 
 if __name__ == "__main__":
-    testTello = True # Change to false for testing when a drone is connected
+    testTello = False # Change to false for testing when a drone is connected
     rotation_hub = Rotation_Hub(testTello)
     rotation_hub.run()
