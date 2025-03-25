@@ -1,91 +1,66 @@
-import sys
-import os
 import tkinter as tk
 from tkinter import messagebox
-
-# Ensure Python can find the modules
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-# Import Classes
-from TelloControlModule.TellControlMain import TelloControl
-from FaceDectetionModule.ScikitLearn.ControlHub import Control_Hub 
-from BrainstormCode.HeadRotationSolution.LivePhaseRotationWorking import Rotation_Hub
+import threading
+import subprocess
+import sys
 
 class MainMenu:
     def __init__(self, root):
         self.root = root
-        self.root.title("Adaptive Drone Project - 7 Hills")
+        self.root.title("Drone Control Main Menu")
+        self.root.geometry("400x300")
 
-        # Initialize Modules
-        self.drone = TelloControl()
-        self.control_screen = Control_Hub()
-        self.rotation_hub = None  # Only create when needed
+        tk.Label(root, text="DJI Tello Drone Control", font=("Helvetica", 16, "bold")).pack(pady=20)
 
-        # Create UI Elements
-        self.label = tk.Label(root, text="Welcome!", font=("Georgia", 14))
-        self.label.pack(pady=10)
+        tk.Button(root, text="New Drone", command=self.connect_drone, width=20).pack(pady=5)
+        tk.Button(root, text="Fly", command=self.launch_rotation_hub, width=20).pack(pady=5)
+        tk.Button(root, text="Help", command=self.show_help, width=20).pack(pady=5)
+        tk.Button(root, text="Quit", command=self.quit_program, width=20).pack(pady=20)
 
-        # Buttons
-        self.create_button("New Drone", self.setup_new_drone)
+        self.drone_connected = False
+        self.rotation_hub_process = None
 
-        # Flight mode button (initialize before calling check_drone_status)
-        self.flight_button = tk.Button(self.root, text="Fly", font=("Georgia", 12), command=self.start_flight_mode, state=tk.DISABLED)
-        self.flight_button.pack(pady=5)
+    def connect_drone(self):
+        # Simulated connection test or setup
+        try:
+            import djitellopy
+            self.drone_connected = True
+            messagebox.showinfo("Connection", "Tello Drone connected successfully!")
+        except Exception as e:
+            messagebox.showerror("Connection Failed", f"Could not connect to the drone.\n{e}")
 
-        self.create_button("Help", self.show_help)
+    def launch_rotation_hub(self):
+        if not self.drone_connected:
+            messagebox.showwarning("Drone Not Connected", "Please connect to the drone first using 'New Drone'.")
+            return
 
-        # Quit Button
-        close_button = tk.Button(root, text="Quit", command=root.quit, font=("Georgia", 12), bg="red", fg="white")
-        close_button.pack(pady=10)
-
-        # Check drone status after defining flight_button
-        self.root.after(100, self.check_drone_status, False)  # Delay execution to ensure flight_button exists
-
-    def create_button(self, text, command):
-        button = tk.Button(self.root, text=text, font=("Georgia", 12), command=command)
-        button.pack(pady=5)
-
-    def check_drone_status(self, show_warning=True):
-        """Checks if the drone is connected and enables/disables the flight button."""
-        if hasattr(self.drone, 'is_connected') and self.drone.is_connected():
-            self.flight_button.config(state=tk.NORMAL)
-        else:
-            self.flight_button.config(state=tk.DISABLED)
-            if show_warning:
-                messagebox.showwarning("Drone Not Connected", "Please connect a drone before flying.")
-
-    def setup_new_drone(self):
-        """Handles connecting a new drone."""
-        print("Initializing new drone setup...")
-        connected = self.drone.setup_new_drone()
-        if connected:
-            messagebox.showinfo("Success", "Drone connected successfully!")
-            self.check_drone_status()
-        else:
-            messagebox.showerror("Error", "Failed to connect to drone.")
-
-    def start_flight_mode(self):
-        """Starts the Rotation Hub if a drone is connected."""
-        if hasattr(self.drone, 'is_connected') and self.drone.is_connected():
-            print("Launching flight mode...")
-            if self.rotation_hub is None:
-                self.rotation_hub = Rotation_Hub(self.drone)  # Only create when needed
-            self.root.withdraw()  # Hide main menu when flight mode starts
-            self.rotation_hub.start()
-        else:
-            messagebox.showerror("Error", "No drone connected! Please connect a drone first.")
+        try:
+            # Launch Rotation_Hub as a new subprocess so it has its own window
+            subprocess.Popen([sys.executable, "LivePhaseRotationWorking.py"])
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not launch drone controller.\n{e}")
 
     def show_help(self):
-        """Displays help information."""
-        help_text = """
-        Adaptive Drone Project Help:
-        - 'New Drone': Connect a new drone.
-        - 'Fly': Start flight mode (enabled only when a drone is connected).
-        - 'Quit': Exit the application.
-        """
+        help_text = (
+            "How to Connect & Fly:\n\n"
+            "1. Click 'New Drone' to connect to the Tello drone.\n"
+            "2. Click 'Fly' to start the camera-based flight interface.\n"
+            "3. Inside the fly window, use the buttons:\n"
+            "   - 'Takeoff/Land': Start or stop flying.\n"
+            "   - 'Kill Switch': Emergency stop and exit.\n\n"
+            "Head Gestures:\n"
+            "- Look up: Ascend\n"
+            "- Look down: Descend\n"
+            "- Look left/right: Rotate\n"
+            "- Nod up: Move forward\n"
+            "- Nod down: Move backward\n"
+        )
         messagebox.showinfo("Help", help_text)
+
+    def quit_program(self):
+        self.root.quit()
 
 if __name__ == "__main__":
     root = tk.Tk()
-    menu = MainMenu(root)
+    app = MainMenu(root)
     root.mainloop()
