@@ -1,3 +1,12 @@
+"""
+DJI Tello Drone GUI Controller
+Created by Abumere Okhihan
+
+This GUI serves as the main menu for launching and managing a face-gesture-controlled
+DJI Tello drone system. Users can connect the drone, access the head-movement control interface,
+read help instructions, or exit the program.
+"""
+
 import tkinter as tk
 from tkinter import messagebox
 import threading
@@ -10,37 +19,50 @@ class MainMenu:
         self.root.title("Drone Control Main Menu")
         self.root.geometry("400x300")
 
+        # Main title
         tk.Label(root, text="DJI Tello Drone Control", font=("Helvetica", 16, "bold")).pack(pady=20)
 
+        # Buttons for drone setup and control
         tk.Button(root, text="New Drone", command=self.connect_drone, width=20).pack(pady=5)
         tk.Button(root, text="Fly", command=self.launch_rotation_hub, width=20).pack(pady=5)
         tk.Button(root, text="Help", command=self.show_help, width=20).pack(pady=5)
         tk.Button(root, text="Quit", command=self.quit_program, width=20).pack(pady=20)
 
+        # Internal state tracking
         self.drone_connected = False
         self.rotation_hub_process = None
 
     def connect_drone(self):
-        # Simulated connection test or setup
+        """
+        Simulates drone connection check.
+        If successful, sets internal flag to True and shows a confirmation popup.
+        """
         try:
-            import djitellopy
+            import djitellopy  # Attempt to import the drone control library
             self.drone_connected = True
             messagebox.showinfo("Connection", "Tello Drone connected successfully!")
         except Exception as e:
             messagebox.showerror("Connection Failed", f"Could not connect to the drone.\n{e}")
 
     def launch_rotation_hub(self):
+        """
+        Launches the drone's head-movement control GUI in a separate subprocess.
+        Only works after the drone is successfully connected.
+        """
         if not self.drone_connected:
             messagebox.showwarning("Drone Not Connected", "Please connect to the drone first using 'New Drone'.")
             return
 
         try:
-            # Launch Rotation_Hub as a new subprocess so it has its own window
             subprocess.Popen([sys.executable, "LivePhaseRotationWorking.py"])
         except Exception as e:
             messagebox.showerror("Error", f"Could not launch drone controller.\n{e}")
 
     def show_help(self):
+        """
+        Displays a help message box with instructions on using the drone system
+        and details on the supported head gesture commands.
+        """
         help_text = (
             "How to Connect & Fly:\n\n"
             "1. Click 'New Drone' to connect to the Tello drone.\n"
@@ -58,8 +80,12 @@ class MainMenu:
         messagebox.showinfo("Help", help_text)
 
     def quit_program(self):
+        """
+        Gracefully exits the main menu GUI.
+        """
         self.root.quit()
 
+# Entry point of the program
 if __name__ == "__main__":
     root = tk.Tk()
     app = MainMenu(root)
