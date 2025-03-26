@@ -93,7 +93,7 @@ class MainMenu:
         try:
             self.rotation_hub.cleanup()
         except Exception as e:
-            messagebox.showerror("Error", f"Error during cleanup.\n{e}")
+            pass
 
 # Entry point of the program
 if __name__ == "__main__":
