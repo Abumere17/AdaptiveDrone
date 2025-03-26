@@ -24,7 +24,7 @@ import threading
 import cv2
 import mediapipe as mp
 import numpy as np
-from tkinter import Tk, Label, Button, Frame
+from tkinter import Tk, Label, Button, Frame, Toplevel
 from PIL import Image, ImageTk
 from djitellopy import tello
 from TelloControlModule.flight_commands import start_flying, stop_flying
@@ -38,7 +38,30 @@ NOD_THRESHOLD_MAX = 10      # Maximum angle (in degrees) for nod candidate
 SCALE = 10                  # Pixels per degree for visual gauges
 
 class Rotation_Hub:
-    def __init__(self, testTello = False):
+    def __init__(self, testTello = False, parent=None):
+        """
+            Runs when new drone button is pressed
+        """
+        self.parent = parent
+        
+        # Connect drone or testDrone
+        if not testTello:
+            self.drone_controller = tello.Tello()
+            self.drone_controller.connect()
+            self.drone_controller.streamon()
+            self.drone_controller.speed = 50
+            print("Tello drone successfully connected.")
+        else:
+            self.drone_controller = TestTello()
+
+    def start(self):
+        """
+            Initalization commands before the user starts controling the drone
+        """
+
+        # Initialize webcam capture
+        self.cap = cv2.VideoCapture(0)
+
         # Initialize MediaPipe face mesh
         self.face_mesh = mp.solutions.face_mesh.FaceMesh(
             min_detection_confidence=0.5,
@@ -47,27 +70,11 @@ class Rotation_Hub:
         self.mp_drawing = mp.solutions.drawing_utils
         self.drawing_spec = self.mp_drawing.DrawingSpec(thickness=1, circle_radius=1)
 
-        # Initialize webcam capture
-        self.cap = cv2.VideoCapture(0)
-
         # Flag to check that frames are ready to display
         self.frameReady = True
-
-        # Connect drone or testDrone
-        if testTello == False:
-            try:
-                self.drone_controller = tello.Tello()
-                self.drone_controller.connect()
-                self.drone_controller.streamon()
-                self.drone_controller.speed = 50
-                print("Tello drone successfully connected.")
-            except Exception as e:
-                print("Tello drone connection failed.")
-        else:
-            self.drone_controller = TestTello()
                 
         # Initialize Tkinter window and layout
-        self.root = Tk()
+        self.root = Toplevel(self.parent)
         self.root.title("Control Hub")
         self.video_frame = Frame(self.root)
         self.video_frame.pack()
@@ -439,6 +446,7 @@ class Rotation_Hub:
 
     def run(self):
         """Start updating both video streams and run the Tkinter main loop."""
+        self.start()
         self.update_head_pose()
         self.update_drone_stream()
         if self.frameReady == False:

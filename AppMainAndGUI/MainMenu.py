@@ -1,111 +1,102 @@
 """
-    Abumere Okhihan
-    MainMenu.py
+DJI Tello Drone GUI Controller
+Created by Abumere Okhihan
 
-    description 
-
-    TODO:
-    - Ensure that rotation hub does not just start up right away
-    - Fix bugs like the 3 windows popping up, and make it so that main menu screen closes once another screen is open
-    - Remove setup phase (new user), we arnt using that
-    - Finish creating help screen
-    - 
-
+This GUI serves as the main menu for launching and managing a face-gesture-controlled
+DJI Tello drone system. Users can connect the drone, access the head-movement control interface,
+read help instructions, or exit the program.
 """
 
-import sys
-import os
 import tkinter as tk
 from tkinter import messagebox
-# Ensure Python can find the modules
+import threading
+import subprocess
+import sys
+import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
- 
-# Import Classes
-from TelloControlModule.TellControlMain import TelloControl
-from FaceDectetionModule.ScikitLearn.SetupPhase import SetupPhase
-from FaceDectetionModule.ScikitLearn.ControlHub import Control_Hub 
-from FaceDectetionModule.ScikitLearn.utils import get_face_landmarks
 from BrainstormCode.HeadRotationSolution.LivePhaseRotationWorking import Rotation_Hub
 
 class MainMenu:
     def __init__(self, root):
         self.root = root
-        self.root.title("Adaptive Drone Project - 7 Hills")
- 
-        # Initialize Modules
-        self.drone = TelloControl()
-        self.setup = SetupPhase()
-        self.control_screen = Control_Hub()
-        self.rotation_hub = Rotation_Hub(self.drone)
- 
-        # Create UI Elements
-        self.label = tk.Label(root, text="Welcome!", font=("Georgia", 14))
-        self.label.pack(pady=10)
- 
-        # Buttons
-        self.create_button("New Drone", self.setup_new_drone)
-        self.create_button("New User", self.setup_new_user)
-       
-        # Flight mode button (disabled initially)
-        self.flight_button = tk.Button(self.root, text="Fly", font=("Georgia", 12), command=self.start_flight_mode, state=tk.DISABLED)
-        self.flight_button.pack(pady=5)
- 
-        self.create_button("Help", self.show_help)
- 
-        # Quit Button
-        close_button = tk.Button(root, text="Quit", command=root.quit, font=("Georgia", 12), bg="red", fg="white")
-        close_button.pack(pady=10)
- 
-        # Check if drone is connected
-        self.check_drone_status()
-   
-    def create_button(self, text, command):
-        button = tk.Button(self.root, text=text, font=("Georgia", 12), command=command)
-        button.pack(pady=5)
-   
-    def check_drone_status(self):
-        """Checks if the drone is connected and enables/disables the flight button."""
-        if hasattr(self.drone, 'is_connected') and self.drone.is_connected():
-            self.flight_button.config(state=tk.NORMAL)
-        else:
-            self.flight_button.config(state=tk.DISABLED)
-            messagebox.showwarning("Drone Not Connected", "Please connect a drone before flying.")
-   
-    def setup_new_drone(self):
-        """Handles connecting a new drone."""
-        print("Initializing new drone setup...")
-        connected = self.drone.setup_new_drone()
-        if connected:
-            messagebox.showinfo("Success", "Drone connected successfully!")
-            self.check_drone_status()
-        else:
-            messagebox.showerror("Error", "Failed to connect to drone.")
- 
-    def setup_new_user(self):
-        """Handles setting up a new user."""
-        print("Starting new user setup...")
-        self.setup.run_calibration()
- 
-    def start_flight_mode(self):
-        """Starts the Rotation Hub if a drone is connected."""
-        if hasattr(self.drone, 'is_connected') and self.drone.is_connected():
-            print("Launching flight mode...")
-            self.rotation_hub.start()
-        else:
-            messagebox.showerror("Error", "No drone connected! Please connect a drone first.")
-   
-    def show_help(self):
-        """Displays help information."""
-        help_text = """
-        Adaptive Drone Project Help:
-        - 'New Drone': Connect a new drone.
-        - 'New User': Set up a user profile and face tracking.
-        - 'Fly': Start flight mode (enabled only when a drone is connected).
-        - 'Quit': Exit the application.
+        self.root.title("Drone Control Main Menu")
+        self.root.geometry("400x300")
+
+        # Main title
+        tk.Label(root, text="DJI Tello Drone Control", font=("Helvetica", 16, "bold")).pack(pady=20)
+
+        # Buttons for drone setup and control
+        tk.Button(root, text="New Drone", command=self.connect_drone, width=20).pack(pady=5)
+        tk.Button(root, text="Fly", command=self.launch_rotation_hub, width=20).pack(pady=5)
+        tk.Button(root, text="Help", command=self.show_help, width=20).pack(pady=5)
+        tk.Button(root, text="Quit", command=self.quit_program, width=20).pack(pady=20)
+
+        # Internal state tracking
+        self.drone_connected = False
+        self.rotation_hub_process = None
+
+    def connect_drone(self):
         """
+        Simulates drone connection check.
+        If successful, sets internal flag to True and shows a confirmation popup.
+        """
+        try: # does not return an exception when drone isnt connected
+            self.rotation_hub = Rotation_Hub(False, self.root)
+            self.drone_connected = True
+            messagebox.showinfo("Connection", "Tello Drone connected successfully!")
+
+        except Exception as e:
+            messagebox.showerror("Connection Failed", f"Could not connect to the drone.\n{e}")
+
+    def launch_rotation_hub(self):
+        """
+        Launches the drone's head-movement control GUI in a separate subprocess.
+        Only works after the drone is successfully connected.
+        """
+
+        if not self.drone_connected:
+            messagebox.showwarning("Drone Not Connected", "Please connect to the drone first using 'New Drone'.")
+            return
+        
+        try:
+            self.rotation_hub.run()
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not launch drone controller.\n{e}")
+            
+    def show_help(self):
+        """
+        Displays a help message box with instructions on using the drone system
+        and details on the supported head gesture commands.
+        """
+        help_text = (
+            "How to Connect & Fly:\n\n"
+            "1. Click 'New Drone' to connect to the Tello drone.\n"
+            "2. Click 'Fly' to start the camera-based flight interface.\n"
+            "3. Inside the fly window, use the buttons:\n"
+            "   - 'Takeoff/Land': Start or stop flying.\n"
+            "   - 'Kill Switch': Emergency stop and exit.\n\n"
+            "Head Gestures:\n"
+            "- Look up: Ascend\n"
+            "- Look down: Descend\n"
+            "- Look left/right: Rotate\n"
+            "- Nod up: Move forward\n"
+            "- Nod down: Move backward\n"
+        )
         messagebox.showinfo("Help", help_text)
- 
+
+    def quit_program(self):
+        """
+        Gracefully exits the main menu GUI.
+        """
+        self.root.quit()
+
+        try:
+            self.rotation_hub.cleanup()
+        except Exception as e:
+            messagebox.showerror("Error", f"Error during cleanup.\n{e}")
+
+# Entry point of the program
 if __name__ == "__main__":
     root = tk.Tk()
-    menu = MainMenu(root)
+    app = MainMenu(root)
     root.mainloop()
