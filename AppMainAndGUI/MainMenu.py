@@ -12,6 +12,9 @@ from tkinter import messagebox
 import threading
 import subprocess
 import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from BrainstormCode.HeadRotationSolution.LivePhaseRotationWorking import Rotation_Hub
 
 class MainMenu:
     def __init__(self, root):
@@ -37,10 +40,11 @@ class MainMenu:
         Simulates drone connection check.
         If successful, sets internal flag to True and shows a confirmation popup.
         """
-        try:
-            import djitellopy  # Attempt to import the drone control library
+        try: # does not return an exception when drone isnt connected
+            self.rotation_hub = Rotation_Hub(False, self.root)
             self.drone_connected = True
             messagebox.showinfo("Connection", "Tello Drone connected successfully!")
+
         except Exception as e:
             messagebox.showerror("Connection Failed", f"Could not connect to the drone.\n{e}")
 
@@ -49,15 +53,16 @@ class MainMenu:
         Launches the drone's head-movement control GUI in a separate subprocess.
         Only works after the drone is successfully connected.
         """
+
         if not self.drone_connected:
             messagebox.showwarning("Drone Not Connected", "Please connect to the drone first using 'New Drone'.")
             return
-
+        
         try:
-            subprocess.Popen([sys.executable, "LivePhaseRotationWorking.py"])
+            self.rotation_hub.run()
         except Exception as e:
             messagebox.showerror("Error", f"Could not launch drone controller.\n{e}")
-
+            
     def show_help(self):
         """
         Displays a help message box with instructions on using the drone system
@@ -84,6 +89,11 @@ class MainMenu:
         Gracefully exits the main menu GUI.
         """
         self.root.quit()
+
+        try:
+            self.rotation_hub.cleanup()
+        except Exception as e:
+            messagebox.showerror("Error", f"Error during cleanup.\n{e}")
 
 # Entry point of the program
 if __name__ == "__main__":
