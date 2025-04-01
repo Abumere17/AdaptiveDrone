@@ -8,7 +8,6 @@
       (defined by NOD_THRESHOLD_MIN and NOD_THRESHOLD_MAX) to output the nod direction.
     - Visual gauges are drawn to help the user see the candidate zones.
 """
-
 import cv2
 import mediapipe as mp
 import numpy as np
@@ -47,13 +46,12 @@ face_mesh = mp_face_mesh.FaceMesh(
 mp_drawing = mp.solutions.drawing_utils
 drawing_spec = mp_drawing.DrawingSpec(thickness=1, circle_radius=1)
 
+# Start webcam capture loop
 cap = cv2.VideoCapture(0)
-
 while cap.isOpened():
     success, image = cap.read()
     if not success:
         break
-
     start = time.time()
 
     # Flip image for selfie view and convert BGR to RGB
@@ -71,6 +69,7 @@ while cap.isOpened():
     head_pose_text = ""
     nod_text = ""
 
+    # 3D headpose, nod, and head tilt dectetion loop
     if results.multi_face_landmarks:
         for face_landmarks in results.multi_face_landmarks:
             # Build dictionary of landmark coordinates
@@ -91,7 +90,6 @@ while cap.isOpened():
                     if i == 1:
                         nose_2d = (x, y)
                         nose_3d = (x, y, z * 3000)
-
             face_2d = np.array(face_2d, dtype=np.float64)
             face_3d = np.array(face_3d, dtype=np.float64)
 
@@ -116,7 +114,7 @@ while cap.isOpened():
             y_angle = angles[1] * 360  # Yaw (left/right)
             z_angle = angles[2] * 360  # Roll
 
-            # Regular head orientation detection for continuous commands
+            # Check for head pose command
             if y_angle < -10:
                 head_pose_text = "Looking Left"
             elif y_angle > 10:
@@ -128,14 +126,7 @@ while cap.isOpened():
             else:
                 head_pose_text = "Forward"
 
-            # Draw the nose direction for visualization
-            nose_3d_projection, _ = cv2.projectPoints(
-                nose_3d, rot_vec, trans_vec, cam_matrix, dist_matrix
-            )
-            p1 = (int(nose_2d[0]), int(nose_2d[1]))
-            p2 = (int(nose_2d[0] + y_angle * 10), int(nose_2d[1] - x_angle * 10))
-            cv2.line(image, p1, p2, (255, 0, 0), 3)
-
+            # Check for head tilt
             # --- Head Tilt Detection (Existing) ---
             if 152 in landmarks_dict and 234 in landmarks_dict and 454 in landmarks_dict:
                 chin_x, chin_y, _ = landmarks_dict[152]
@@ -160,6 +151,15 @@ while cap.isOpened():
                 nod_text = candidate
             else:
                 nod_text = ""
+
+            ## Draw webcam frame
+            # Draw the nose direction for visualization
+            nose_3d_projection, _ = cv2.projectPoints(
+                nose_3d, rot_vec, trans_vec, cam_matrix, dist_matrix
+            )
+            p1 = (int(nose_2d[0]), int(nose_2d[1]))
+            p2 = (int(nose_2d[0] + y_angle * 10), int(nose_2d[1] - x_angle * 10))
+            cv2.line(image, p1, p2, (255, 0, 0), 3)
 
             # Display the regular head pose text and nod result
             cv2.putText(image, head_pose_text, (20, 50),
