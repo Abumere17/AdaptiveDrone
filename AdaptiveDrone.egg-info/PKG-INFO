@@ -1,4 +1,4 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.4
 Name: AdaptiveDrone
 Version: 0.1.0
 Summary: Drone app with face gesture and GUI control
@@ -10,6 +10,20 @@ Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
 Requires-Python: >=3.8
 Description-Content-Type: text/markdown
+Requires-Dist: djitellopy
+Requires-Dist: opencv-python
+Requires-Dist: mediapipe
+Requires-Dist: tk
+Requires-Dist: numpy
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
 
 
 # **Adaptive Drone Codebase**
