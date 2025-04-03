@@ -1,10 +1,10 @@
 """
-DJI Tello Drone GUI Controller
-Created by Abumere Okhihan
+    MainMenu.py
+    Created by Abumere Okhihan
 
-This GUI serves as the main menu for launching and managing a face-gesture-controlled
-DJI Tello drone system. Users can connect the drone, access the head-movement control interface,
-read help instructions, or exit the program.
+    This GUI serves as the main menu for launching and managing a face-gesture-controlled
+    DJI Tello drone system. Users can connect the drone, access the head-movement control interface,
+    read help instructions, or exit the program.
 """
 
 import tkinter as tk
@@ -14,7 +14,7 @@ import subprocess
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from BrainstormCode.HeadRotationSolution.LivePhaseRotationWorking import Rotation_Hub
+from FinalBuild.ControlHub import Rotation_Hub
 
 class MainMenu:
     def __init__(self, root):
