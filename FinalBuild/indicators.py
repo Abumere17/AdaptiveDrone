@@ -1,3 +1,11 @@
+"""
+    Tejas Patil
+    indicators.py
+
+    Handels indicators like wifi strength and battery precentage for ControlHub.py
+
+"""
+
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))

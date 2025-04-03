@@ -14,6 +14,7 @@
 
     TODO:
     - Add keyboard commands
+    - Fix control bugs (backwards and down)
 '''
 
 import os
@@ -141,20 +142,16 @@ class Rotation_Hub:
 
     def update_head_pose(self):
         """Output webcam frame and send controls to drone"""
-        # Default texts for display
+        ## Initalize values ##
+        # Default texts for display, Timer for drone
         head_pose_text = ""
         nod_text = ""
-        
         success, image = self.cap.read()
-
-        # Timer for drone
         start = time.time()
 
-        # Flip image for selfie view and convert BGR to RGB
+        # Flip image for selfie view and convert BGR to RGB, Collect landmarks from image
         image = cv2.cvtColor(cv2.flip(image, 1), cv2.COLOR_BGR2RGB)
         image.flags.writeable = False
-
-        # Collect landmarks from image
         results = self.face_mesh.process(image)
         image.flags.writeable = True
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
@@ -207,7 +204,7 @@ class Rotation_Hub:
                 y_angle = angles[1] * 360  # Yaw (left/right)
                 z_angle = angles[2] * 360  # Roll
 
-                # Regular head orientation detection for continuous commands
+                # Get Regular head orientation position
                 if y_angle < -12:
                     new_command = "yaw_left"
                     head_pose_text = "Looking Left"
@@ -247,16 +244,16 @@ class Rotation_Hub:
                     nod_text = candidate
                     if nod_text == 'Nod Up':
                         new_command = "forward"
-                    elif nod_text == 'Nod down':
+                    elif nod_text == 'Nod Down':
                         new_command = "backward"
                     elif nod_text == 'Nod Left':
                         new_command = "neutral" # change
                     elif nod_text == 'Nod Right':
-                        new_command = "take photo" # change
+                        new_command = "take photo"
                 else:
                     nod_text = ""
 
-                ## Send drone command: only send if command changed and interval elapsed
+                ## Send drone command: only send if command changed and interval elapsed ##
                 current_time = time.time()
                 if (new_command != self.last_command and 
                         (current_time - self.last_rc_time) >= self.rc_interval):
@@ -275,7 +272,7 @@ class Rotation_Hub:
                     except Exception as e:
                         print("Error sending RC command:", e)
             
-                ## Draw frame
+                ## Draw frame ##
                 # Display the regular head pose text and nod result
                 cv2.putText(image, head_pose_text, (20, 50),
                             cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
@@ -380,15 +377,16 @@ class Rotation_Hub:
                 self.head_pose_lbl.configure(image=imgtk)
                 self.root.after(10, self.update_head_pose)
         
-        else: # Landmarks not dectected
+        else:
             print("No landmarks dectected")
             self.root.after(10, self.update_head_pose)
 
-           # if time.time() - self.last_detected_time > 5:
-              #  print("No face detected for 5 seconds. Landing the drone and exiting...")
-               # self.drone_controller.land()
-             #   self.cleanup()
-              #  exit(0)
+            # Close app if face not dectected for 5 sec
+            if time.time() - self.last_detected_time > 5:
+                print("No face detected for 5 seconds. Landing the drone and exiting...")
+                self.drone_controller.land()
+                self.cleanup()
+                exit(0)
 
     def error_window(self):
         """Displays an error window when face landmarks are not detected."""
