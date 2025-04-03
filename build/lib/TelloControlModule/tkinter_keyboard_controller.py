@@ -6,10 +6,13 @@ import cv2
 from PIL import Image, ImageTk
 # Import the tello module
 from djitellopy import tello
+# Import indicators
+from indicators import Indicators
 # Import threading for our takeoff/land method
 import threading
 # import our flight commands
-from .flight_commands import start_flying, stop_flying
+from flight_commands import start_flying, stop_flying
+
 
 # Class for controlling the drone via keyboard commands
 class DroneController:
@@ -33,48 +36,18 @@ class DroneController:
         # Define a speed for the drone to fly at
         self.drone.speed = 50
 
+        # Define the height and width to resize the current frame to
+        self.h = 480
+        self.w = 720
+
         # Label for displaying video stream
         self.cap_lbl = Label(self.root)
 
         # Create a button to send takeoff and land commands to the drone
         self.takeoff_land_button = Button(self.root, text="Takeoff/Land", command=lambda: self.takeoff_land())
 
-        # ----------------------------------------------------------------------------------------------------------------
-        """STEP 1: Initialize a flipping attribute and flip buttons as a part of our DroneController class."""
-        self.flipping = False
-        # Create Buttons bound to our flip commands and make them a child of the input frame.
-        self.flip_left_button = Button(self.input_frame, text="Flip Left", command=lambda: self.execute_flip('left'))
-        self.flip_right_button = Button(self.input_frame, text="Flip Right", command=lambda: self.execute_flip('right'))
-        self.flip_forward_button = Button(self.input_frame, text="Flip Forward", command=lambda: self.execute_flip('forward'))
-        self.flip_back_button = Button(self.input_frame, text="Flip Backward", command=lambda: self.execute_flip('back'))
-        # ----------------------------------------------------------------------------------------------------------------
-
-    # --------------------------------------------------------------------------------------------------------------------
-    """STEP 2: Create a method to send flip commands in a separate thread when buttons are pressed. """
-    def execute_flip(self, direction):
-        try:
-            if self.drone.is_flying and self.flipping is False:
-                if direction == 'right':
-                    print('flipping right')
-                    threading.Thread(target=lambda: self.drone.flip_right()).start()
-                    self.flipping = True
-                elif direction == 'left':
-                    print('flipping left')
-                    threading.Thread(target=lambda: self.drone.flip_left()).start()
-                    self.flipping = True
-                elif direction == 'forward':
-                    print('flipping forward')
-                    threading.Thread(target=lambda: self.drone.flip_forward()).start()
-                    self.flipping = True
-                elif direction == 'back':
-                    print('flipping back')
-                    threading.Thread(target=lambda: self.drone.flip_back()).start()
-                    self.flipping = True
-        except Exception as e:
-            print(f"Error in execute flip: {e}")
-        finally:
-            self.flipping = False
-    # ----------------------------------------------------------------------------------------------------------------
+        # Initialize the indicators object
+        self.indicators = Indicators(self.drone, self.w, self.h)
 
     # Define a method for taking off and landing
     def takeoff_land(self):
@@ -89,53 +62,34 @@ class DroneController:
         try:
             # Add the button and video stream label to the window
             self.takeoff_land_button.pack(side='bottom', pady=10)
-            self.cap_lbl.pack(anchor="center")
 
             # Bind the key presses with to the flight commands by associating them with a direction to travel.
-            self.input_frame.bind('<KeyPress-w>',
-                                  lambda event: start_flying(event, 'upward', self.drone, self.drone.speed))
+            self.input_frame.bind('<KeyPress-w>', lambda event: start_flying(event, 'upward', self.drone, self.drone.speed))
             self.input_frame.bind('<KeyRelease-w>', lambda event: stop_flying(event, self.drone))
 
-            self.input_frame.bind('<KeyPress-a>',
-                                  lambda event: start_flying(event, 'yaw_left', self.drone, self.drone.speed))
+            self.input_frame.bind('<KeyPress-a>', lambda event: start_flying(event, 'yaw_left', self.drone, self.drone.speed))
             self.input_frame.bind('<KeyRelease-a>', lambda event: stop_flying(event, self.drone))
 
-            self.input_frame.bind('<KeyPress-s>',
-                                  lambda event: start_flying(event, 'downward', self.drone, self.drone.speed))
+            self.input_frame.bind('<KeyPress-s>', lambda event: start_flying(event, 'downward', self.drone, self.drone.speed))
             self.input_frame.bind('<KeyRelease-s>', lambda event: stop_flying(event, self.drone))
 
-            self.input_frame.bind('<KeyPress-d>',
-                                  lambda event: start_flying(event, 'yaw_right', self.drone, self.drone.speed))
+            self.input_frame.bind('<KeyPress-d>', lambda event: start_flying(event, 'yaw_right', self.drone, self.drone.speed))
             self.input_frame.bind('<KeyRelease-d>', lambda event: stop_flying(event, self.drone))
 
-            self.input_frame.bind('<KeyPress-Up>',
-                                  lambda event: start_flying(event, 'forward', self.drone, self.drone.speed))
+            self.input_frame.bind('<KeyPress-Up>', lambda event: start_flying(event, 'forward', self.drone, self.drone.speed))
             self.input_frame.bind('<KeyRelease-Up>', lambda event: stop_flying(event, self.drone))
 
-            self.input_frame.bind('<KeyPress-Down>',
-                                  lambda event: start_flying(event, 'backward', self.drone, self.drone.speed))
+            self.input_frame.bind('<KeyPress-Down>', lambda event: start_flying(event, 'backward', self.drone, self.drone.speed))
             self.input_frame.bind('<KeyRelease-Down>', lambda event: stop_flying(event, self.drone))
 
-            self.input_frame.bind('<KeyPress-Left>',
-                                  lambda event: start_flying(event, 'left', self.drone, self.drone.speed))
+            self.input_frame.bind('<KeyPress-Left>', lambda event: start_flying(event, 'left', self.drone, self.drone.speed))
             self.input_frame.bind('<KeyRelease-Left>', lambda event: stop_flying(event, self.drone))
 
-            self.input_frame.bind('<KeyPress-Right>',
-                                  lambda event: start_flying(event, 'right', self.drone, self.drone.speed))
+            self.input_frame.bind('<KeyPress-Right>', lambda event: start_flying(event, 'right', self.drone, self.drone.speed))
             self.input_frame.bind('<KeyRelease-Right>', lambda event: stop_flying(event, self.drone))
 
-            # ----------------------------------------------------------------------------------------------------------------
-            """STEP 3: Pack the input frame in a different position and pack the flip buttons to it."""
-            # Pack the input frame to the bottom left corner of our gui window.
-            self.input_frame.pack(side='left', anchor='sw')
-            # Pack the buttons in the button frame in a 'd-pad' style format.
-            self.flip_left_button.pack(side='left', padx=5)
-            self.flip_right_button.pack(side='right', padx=5)
-            self.flip_forward_button.pack(side='top', pady=15)
-            self.flip_back_button.pack(side='bottom', pady=15)
-            # ----------------------------------------------------------------------------------------------------------------
-
-            # Give direct focus to our input frame.
+            # Pack the hidden frame and give direct input focus to it.
+            self.input_frame.pack()
             self.input_frame.focus_set()
 
             self.cap_lbl.pack(anchor="center")
@@ -162,6 +116,9 @@ class DroneController:
         frame = self.frame.frame
 
         frame = cv2.resize(frame, (w, h))
+
+        # Draw the battery indicator on the frame
+        self.indicators.draw_battery_indicator(frame)
 
         # Convert the current frame to the rgb colorspace
         cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
@@ -190,12 +147,12 @@ class DroneController:
         try:
             # Release any resources
             print("Cleaning up resources...")
+            self.indicators.update = False
             self.drone.end()
             self.root.quit()  # Quit the Tkinter main loop
             exit()
         except Exception as e:
             print(f"Error performing cleanup: {e}")
-
 
 if __name__ == "__main__":
     # Initialize the GUI

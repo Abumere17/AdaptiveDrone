@@ -1,0 +1,5 @@
+djitellopy
+opencv-python
+mediapipe
+tk
+numpy

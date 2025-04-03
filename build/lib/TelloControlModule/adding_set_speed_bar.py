@@ -1,5 +1,5 @@
 # import Tkinter to create our GUI.
-from tkinter import Tk, Label, Button, Frame
+from tkinter import Tk, Label, Button, Frame, Scale
 # import openCV for receiving the video frames
 import cv2
 # make imports from the Pillow library for displaying the video stream with Tkinter.
@@ -9,7 +9,8 @@ from djitellopy import tello
 # Import threading for our takeoff/land method
 import threading
 # import our flight commands
-from .flight_commands import start_flying, stop_flying
+from flight_commands import start_flying, stop_flying
+
 
 # Class for controlling the drone via keyboard commands
 class DroneController:
@@ -33,48 +34,31 @@ class DroneController:
         # Define a speed for the drone to fly at
         self.drone.speed = 50
 
+        #################### STEP 1: CREATE A SCALE BAR, SET IT DEFAULT VALUE, AND CREATE A BUTTON ####################
+        # Add the scale bar to set the speed the drone fly's at
+        self.speed_bar = Scale(self.root, from_=25, to=100, length=150, tickinterval=25,
+                               digits=3, label='Drone Flight Speed:',
+                               resolution=25, showvalue=False, orient="horizontal")
+
+        # Set the speed bars default value to our previously set default speed (self.drone.speed = 50)
+        self.speed_bar.set(50)
+
+        # Add a button to reset the speed according to the scale bars value
+        self.set_speed_btn = Button(self.root, text='Reset Speed', command=self.updateSpeed)
+        ##############################################################################################################
+
         # Label for displaying video stream
         self.cap_lbl = Label(self.root)
 
         # Create a button to send takeoff and land commands to the drone
         self.takeoff_land_button = Button(self.root, text="Takeoff/Land", command=lambda: self.takeoff_land())
 
-        # ----------------------------------------------------------------------------------------------------------------
-        """STEP 1: Initialize a flipping attribute and flip buttons as a part of our DroneController class."""
-        self.flipping = False
-        # Create Buttons bound to our flip commands and make them a child of the input frame.
-        self.flip_left_button = Button(self.input_frame, text="Flip Left", command=lambda: self.execute_flip('left'))
-        self.flip_right_button = Button(self.input_frame, text="Flip Right", command=lambda: self.execute_flip('right'))
-        self.flip_forward_button = Button(self.input_frame, text="Flip Forward", command=lambda: self.execute_flip('forward'))
-        self.flip_back_button = Button(self.input_frame, text="Flip Backward", command=lambda: self.execute_flip('back'))
-        # ----------------------------------------------------------------------------------------------------------------
-
-    # --------------------------------------------------------------------------------------------------------------------
-    """STEP 2: Create a method to send flip commands in a separate thread when buttons are pressed. """
-    def execute_flip(self, direction):
-        try:
-            if self.drone.is_flying and self.flipping is False:
-                if direction == 'right':
-                    print('flipping right')
-                    threading.Thread(target=lambda: self.drone.flip_right()).start()
-                    self.flipping = True
-                elif direction == 'left':
-                    print('flipping left')
-                    threading.Thread(target=lambda: self.drone.flip_left()).start()
-                    self.flipping = True
-                elif direction == 'forward':
-                    print('flipping forward')
-                    threading.Thread(target=lambda: self.drone.flip_forward()).start()
-                    self.flipping = True
-                elif direction == 'back':
-                    print('flipping back')
-                    threading.Thread(target=lambda: self.drone.flip_back()).start()
-                    self.flipping = True
-        except Exception as e:
-            print(f"Error in execute flip: {e}")
-        finally:
-            self.flipping = False
-    # ----------------------------------------------------------------------------------------------------------------
+    #################### STEP 3: CREATE A METHOD TO UPDATE THE SPEED #################################################
+    def updateSpeed(self):
+        """Set the drones default speed to the value in the speed scale bar"""
+        self.drone.speed = self.speed_bar.get()
+        print(f'reset speed to {self.drone.speed:.1f}')
+    ###################################################################################################################
 
     # Define a method for taking off and landing
     def takeoff_land(self):
@@ -89,56 +73,42 @@ class DroneController:
         try:
             # Add the button and video stream label to the window
             self.takeoff_land_button.pack(side='bottom', pady=10)
-            self.cap_lbl.pack(anchor="center")
 
             # Bind the key presses with to the flight commands by associating them with a direction to travel.
-            self.input_frame.bind('<KeyPress-w>',
-                                  lambda event: start_flying(event, 'upward', self.drone, self.drone.speed))
+            self.input_frame.bind('<KeyPress-w>', lambda event: start_flying(event, 'upward', self.drone, self.drone.speed))
             self.input_frame.bind('<KeyRelease-w>', lambda event: stop_flying(event, self.drone))
 
-            self.input_frame.bind('<KeyPress-a>',
-                                  lambda event: start_flying(event, 'yaw_left', self.drone, self.drone.speed))
+            self.input_frame.bind('<KeyPress-a>', lambda event: start_flying(event, 'yaw_left', self.drone, self.drone.speed))
             self.input_frame.bind('<KeyRelease-a>', lambda event: stop_flying(event, self.drone))
 
-            self.input_frame.bind('<KeyPress-s>',
-                                  lambda event: start_flying(event, 'downward', self.drone, self.drone.speed))
+            self.input_frame.bind('<KeyPress-s>', lambda event: start_flying(event, 'downward', self.drone, self.drone.speed))
             self.input_frame.bind('<KeyRelease-s>', lambda event: stop_flying(event, self.drone))
 
-            self.input_frame.bind('<KeyPress-d>',
-                                  lambda event: start_flying(event, 'yaw_right', self.drone, self.drone.speed))
+            self.input_frame.bind('<KeyPress-d>', lambda event: start_flying(event, 'yaw_right', self.drone, self.drone.speed))
             self.input_frame.bind('<KeyRelease-d>', lambda event: stop_flying(event, self.drone))
 
-            self.input_frame.bind('<KeyPress-Up>',
-                                  lambda event: start_flying(event, 'forward', self.drone, self.drone.speed))
+            self.input_frame.bind('<KeyPress-Up>', lambda event: start_flying(event, 'forward', self.drone, self.drone.speed))
             self.input_frame.bind('<KeyRelease-Up>', lambda event: stop_flying(event, self.drone))
 
-            self.input_frame.bind('<KeyPress-Down>',
-                                  lambda event: start_flying(event, 'backward', self.drone, self.drone.speed))
+            self.input_frame.bind('<KeyPress-Down>', lambda event: start_flying(event, 'backward', self.drone, self.drone.speed))
             self.input_frame.bind('<KeyRelease-Down>', lambda event: stop_flying(event, self.drone))
 
-            self.input_frame.bind('<KeyPress-Left>',
-                                  lambda event: start_flying(event, 'left', self.drone, self.drone.speed))
+            self.input_frame.bind('<KeyPress-Left>', lambda event: start_flying(event, 'left', self.drone, self.drone.speed))
             self.input_frame.bind('<KeyRelease-Left>', lambda event: stop_flying(event, self.drone))
 
-            self.input_frame.bind('<KeyPress-Right>',
-                                  lambda event: start_flying(event, 'right', self.drone, self.drone.speed))
+            self.input_frame.bind('<KeyPress-Right>', lambda event: start_flying(event, 'right', self.drone, self.drone.speed))
             self.input_frame.bind('<KeyRelease-Right>', lambda event: stop_flying(event, self.drone))
 
-            # ----------------------------------------------------------------------------------------------------------------
-            """STEP 3: Pack the input frame in a different position and pack the flip buttons to it."""
-            # Pack the input frame to the bottom left corner of our gui window.
-            self.input_frame.pack(side='left', anchor='sw')
-            # Pack the buttons in the button frame in a 'd-pad' style format.
-            self.flip_left_button.pack(side='left', padx=5)
-            self.flip_right_button.pack(side='right', padx=5)
-            self.flip_forward_button.pack(side='top', pady=15)
-            self.flip_back_button.pack(side='bottom', pady=15)
-            # ----------------------------------------------------------------------------------------------------------------
-
-            # Give direct focus to our input frame.
+            # Pack the hidden frame and give direct input focus to it.
+            self.input_frame.pack()
             self.input_frame.focus_set()
 
             self.cap_lbl.pack(anchor="center")
+
+            #################### STEP 2: ADD THE SCALE BAR AND BUTTON TO OUR GUI ######################################
+            self.speed_bar.pack(anchor='w', padx=(10, 0))
+            self.set_speed_btn.pack(anchor='sw', padx=(10, 0), pady=(20, 0))
+            # #########################################################################################################
 
             # Call the video stream method
             self.video_stream()

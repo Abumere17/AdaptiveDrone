@@ -40,11 +40,10 @@ class MainMenu:
         Simulates drone connection check.
         If successful, sets internal flag to True and shows a confirmation popup.
         """
-        try: # does not return an exception when drone isnt connected
-            self.rotation_hub = Rotation_Hub(False, self.root)
+        try:
+            self.rotation_hub = Rotation_Hub(False)
             self.drone_connected = True
             messagebox.showinfo("Connection", "Tello Drone connected successfully!")
-
         except Exception as e:
             messagebox.showerror("Connection Failed", f"Could not connect to the drone.\n{e}")
 
@@ -93,15 +92,10 @@ class MainMenu:
         try:
             self.rotation_hub.cleanup()
         except Exception as e:
-            pass
+            messagebox.showerror("Error", f"Error during cleanup.\n{e}")
 
 # Entry point of the program
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = MainMenu(root)
-    root.mainloop()
-
-def main():
     root = tk.Tk()
     app = MainMenu(root)
     root.mainloop()
