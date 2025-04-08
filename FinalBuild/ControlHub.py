@@ -14,7 +14,6 @@
 
     TODO:
     - Add keyboard commands
-    - Fix control bugs (backwards and down)
 '''
 
 import os
