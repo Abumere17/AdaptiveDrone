@@ -161,6 +161,53 @@ class Rotation_Hub:
             candidate = "Nod Down"
         return candidate
 
+    def draw_gauges(self, frame):
+        gauge_width = int(NOD_THRESHOLD_MAX * SCALE * 2)
+        gauge_height = 20
+        gauge_center_x = self.w // 2
+        gauge_y = self.h - 50
+
+        # Horizontal gauge (yaw)
+        cv2.rectangle(frame, (gauge_center_x - gauge_width // 2, gauge_y),
+                    (gauge_center_x + gauge_width // 2, gauge_y + gauge_height),
+                    (50, 50, 50), -1)
+        cv2.line(frame, (gauge_center_x, gauge_y),
+                (gauge_center_x, gauge_y + gauge_height), (255, 255, 255), 2)
+        cv2.rectangle(frame,
+                    (gauge_center_x + int(NOD_THRESHOLD_MIN * SCALE), gauge_y),
+                    (gauge_center_x + int(NOD_THRESHOLD_MAX * SCALE), gauge_y + gauge_height),
+                    (0, 255, 0), -1)
+        cv2.rectangle(frame,
+                    (gauge_center_x - int(NOD_THRESHOLD_MAX * SCALE), gauge_y),
+                    (gauge_center_x - int(NOD_THRESHOLD_MIN * SCALE), gauge_y + gauge_height),
+                    (0, 255, 0), -1)
+        current_offset = int(self.y_angle * SCALE)
+        marker_x = gauge_center_x + current_offset
+        cv2.circle(frame, (marker_x, gauge_y + gauge_height // 2), 8, (0, 0, 255), -1)
+
+        # Vertical gauge (pitch)
+        gauge_height_pitch = int(NOD_THRESHOLD_MAX * SCALE * 2)
+        gauge_width_pitch = 20
+        gauge_center_y = self.h // 2
+        gauge_x = 50
+
+        cv2.rectangle(frame, (gauge_x, gauge_center_y - gauge_height_pitch // 2),
+                    (gauge_x + gauge_width_pitch, gauge_center_y + gauge_height_pitch // 2),
+                    (50, 50, 50), -1)
+        cv2.line(frame, (gauge_x, gauge_center_y),
+                (gauge_x + gauge_width_pitch, gauge_center_y), (255, 255, 255), 2)
+        cv2.rectangle(frame,
+                    (gauge_x, gauge_center_y - int(NOD_THRESHOLD_MAX * SCALE)),
+                    (gauge_x + gauge_width_pitch, gauge_center_y - int(NOD_THRESHOLD_MIN * SCALE)),
+                    (0, 255, 0), -1)
+        cv2.rectangle(frame,
+                    (gauge_x, gauge_center_y + int(NOD_THRESHOLD_MIN * SCALE)),
+                    (gauge_x + gauge_width_pitch, gauge_center_y + int(NOD_THRESHOLD_MAX * SCALE)),
+                    (0, 255, 0), -1)
+        current_offset_pitch = int(self.x_angle * SCALE)
+        marker_y = gauge_center_y - current_offset_pitch
+        cv2.circle(frame, (gauge_x + gauge_width_pitch // 2, marker_y), 8, (0, 0, 255), -1)
+
     def update_head_pose(self):
         """Output webcam frame and send controls to drone"""
         ## Initalize values ##
@@ -221,21 +268,21 @@ class Rotation_Hub:
                 # Decompose rotation matrix to get head angles (in degrees)
                 rmat, _ = cv2.Rodrigues(rot_vec)
                 angles, _, _, _, _, _ = cv2.RQDecomp3x3(rmat)
-                x_angle = angles[0] * 360  # Pitch (up/down)
-                y_angle = angles[1] * 360  # Yaw (left/right)
-                z_angle = angles[2] * 360  # Roll
+                self.x_angle = angles[0] * 360  # Pitch (up/down)
+                self.y_angle = angles[1] * 360  # Yaw (left/right)
+                self.z_angle = angles[2] * 360  # Roll
 
                 # Get Regular head orientation position
-                if y_angle < -12:
+                if self.y_angle < -12:
                     new_command = "yaw_left"
                     head_pose_text = "Looking Left"
-                elif y_angle > 12:
+                elif self.y_angle > 12:
                     new_command = "yaw_right"
                     head_pose_text = "Looking Right"
-                elif x_angle < -12:
+                elif self.x_angle < -12:
                     new_command = "downward"
                     head_pose_text = "Looking Down"
-                elif x_angle > 12:
+                elif self.x_angle > 12:
                     new_command = "upward"
                     head_pose_text = "Looking Up"
                 else:
@@ -260,7 +307,7 @@ class Rotation_Hub:
                                 cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 0), 2)
 
                 # Immediate Nod Detection Based on Visual Gauge
-                candidate = self.get_nod_candidate(x_angle, y_angle)
+                candidate = self.get_nod_candidate(self.x_angle, self.y_angle)
                 if candidate is not None:
                     nod_text = candidate
                     if nod_text == 'Nod Up':
@@ -274,11 +321,10 @@ class Rotation_Hub:
                 else:
                     nod_text = ""
 
-                ## Send drone command: only send if command changed and interval elapsed ##
-                # Determine which command to send (keyboard override takes precedence)
-                effective_command = self.keyboard_override if self.keyboard_override else new_command
+                ## Send drone command: only send if command changed and interval elapsed (keyboard override takes precedence) ##
+                new_command = self.keyboard_override if self.keyboard_override else new_command
                 current_time = time.time()
-                if (effective_command != self.last_command and 
+                if (new_command != self.last_command and 
                         (current_time - self.last_rc_time) >= self.rc_interval):
 
                     try:
@@ -300,11 +346,11 @@ class Rotation_Hub:
                 # Display the regular head pose text and nod result
                 cv2.putText(image, head_pose_text, (20, 50),
                             cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
-                cv2.putText(image, "x: " + str(np.round(x_angle, 2)), (500, 50),
+                cv2.putText(image, "x: " + str(np.round(self.x_angle, 2)), (500, 50),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                cv2.putText(image, "y: " + str(np.round(y_angle, 2)), (500, 100),
+                cv2.putText(image, "y: " + str(np.round(self.y_angle, 2)), (500, 100),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                cv2.putText(image, "z: " + str(np.round(z_angle, 2)), (500, 150),
+                cv2.putText(image, "z: " + str(np.round(self.z_angle, 2)), (500, 150),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
                 if nod_text:
                     cv2.putText(image, nod_text, (20, 200),
@@ -315,7 +361,7 @@ class Rotation_Hub:
                     nose_3d, rot_vec, trans_vec, cam_matrix, dist_matrix
                 )
                 p1 = (int(nose_2d[0]), int(nose_2d[1]))
-                p2 = (int(nose_2d[0] + y_angle * 10), int(nose_2d[1] - x_angle * 10))
+                p2 = (int(nose_2d[0] + self.y_angle * 10), int(nose_2d[1] - self.x_angle * 10))
                 cv2.line(image, p1, p2, (255, 0, 0), 3)
 
                 #  Draw Visual Gauges for Nodding Ranges 
@@ -324,67 +370,13 @@ class Rotation_Hub:
                 gauge_center_x = img_w // 2
                 gauge_y = img_h - 50
 
-                # Background gauge, Center line, Candidate zone for Nod Right and left
-                cv2.rectangle(image, (gauge_center_x - gauge_width // 2, gauge_y),
-                            (gauge_center_x + gauge_width // 2, gauge_y + gauge_height),
-                            (50, 50, 50), -1)
-                # 
-                cv2.line(image, (gauge_center_x, gauge_y),
-                        (gauge_center_x, gauge_y + gauge_height), (255, 255, 255), 2)
-                cv2.rectangle(
-                    image,
-                    (gauge_center_x + int(NOD_THRESHOLD_MIN * SCALE), gauge_y),
-                    (gauge_center_x + int(NOD_THRESHOLD_MAX * SCALE), gauge_y + gauge_height),
-                    (0, 255, 0), -1
-                )
-                cv2.rectangle(
-                    image,
-                    (gauge_center_x - int(NOD_THRESHOLD_MAX * SCALE), gauge_y),
-                    (gauge_center_x - int(NOD_THRESHOLD_MIN * SCALE), gauge_y + gauge_height),
-                    (0, 255, 0), -1
-                )
-                # Current yaw marker
-                current_offset = int(y_angle * SCALE)
-                marker_x = gauge_center_x + current_offset
-                cv2.circle(image, (marker_x, gauge_y + gauge_height // 2), 8, (0, 0, 255), -1)
-
-                # Vertical gauge for pitch (up/down nod)
-                gauge_height_pitch = int(NOD_THRESHOLD_MAX * SCALE * 2)
-                gauge_width_pitch = 20
-                gauge_center_y = img_h // 2
-                gauge_x = 50
-                # Background gauge
-                cv2.rectangle(image, (gauge_x, gauge_center_y - gauge_height_pitch // 2),
-                            (gauge_x + gauge_width_pitch, gauge_center_y + gauge_height_pitch // 2),
-                            (50, 50, 50), -1)
-                # Center line
-                cv2.line(image, (gauge_x, gauge_center_y),
-                        (gauge_x + gauge_width_pitch, gauge_center_y), (255, 255, 255), 2)
-                # Candidate zone for Nod Up (looking up)
-                cv2.rectangle(
-                    image,
-                    (gauge_x, gauge_center_y - int(NOD_THRESHOLD_MAX * SCALE)),
-                    (gauge_x + gauge_width_pitch, gauge_center_y - int(NOD_THRESHOLD_MIN * SCALE)),
-                    (0, 255, 0), -1
-                )
-                # Candidate zone for Nod Down
-                cv2.rectangle(
-                    image,
-                    (gauge_x, gauge_center_y + int(NOD_THRESHOLD_MIN * SCALE)),
-                    (gauge_x + gauge_width_pitch, gauge_center_y + int(NOD_THRESHOLD_MAX * SCALE)),
-                    (0, 255, 0), -1
-                )
-                # Current pitch marker (note: higher pitch means up, so subtract offset)
-                current_offset_pitch = int(x_angle * SCALE)
-                marker_y = gauge_center_y - current_offset_pitch
-                cv2.circle(image, (gauge_x + gauge_width_pitch // 2, marker_y), 8, (0, 0, 255), -1)
-
                 end = time.time()
                 total_time = end - start
                 fps = 1 / total_time if total_time > 0 else 0
                 cv2.putText(image, f'FPS: {int(fps)}', (20, 450),
                             cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 2)
 
+                # Draw facial landmarks
                 self.mp_drawing.draw_landmarks(
                     image=image,
                     landmark_list=face_landmarks,
@@ -400,7 +392,7 @@ class Rotation_Hub:
                 self.head_pose_lbl.imgtk = imgtk
                 self.head_pose_lbl.configure(image=imgtk)
                 self.root.after(10, self.update_head_pose)
-        
+                
         else:
             print("No landmarks dectected")
             self.root.after(10, self.update_head_pose)
@@ -420,15 +412,18 @@ class Rotation_Hub:
             threading.Thread(target=lambda: self.drone_controller.takeoff()).start()
 
     def update_drone_stream(self):
-        """Capture from the Tello video stream and update the Tkinter label."""
-        frame = self.drone_controller.get_frame_read().frame
-        frame = cv2.resize(frame, (self.w, self.h))
+        """ Capture from the Tello FPV """
+        # Get drone FPV
+        self.frame = self.drone_controller.get_frame_read().frame
+        self.frame = cv2.resize(self.frame, (self.w, self.h))
 
-        self.indicators.draw_battery_indicator(frame)
-        self.indicators.draw_wifi_indicator(frame)
+        # Draw indicators and gauges
+        self.indicators.draw_battery_indicator(self.frame)
+        self.indicators.draw_wifi_indicator(self.frame)
+        self.draw_gauges(self.frame)
 
-        # Directly convert to PIL without changing color space
-        img_pil = Image.fromarray(frame)
+        # Update frame
+        img_pil = Image.fromarray(self.frame)
         imgtk = ImageTk.PhotoImage(image=img_pil)
         self.drone_stream_lbl.imgtk = imgtk
         self.drone_stream_lbl.configure(image=imgtk)
@@ -471,6 +466,6 @@ class Rotation_Hub:
             print(f"Error during cleanup: {e}")
 
 if __name__ == "__main__":
-    testTello = False # Change to false for testing when a drone is connected
+    testTello = True # Change to false for testing when a drone is connected
     rotation_hub = Rotation_Hub(testTello)
     rotation_hub.run()
