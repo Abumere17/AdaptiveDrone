@@ -121,6 +121,28 @@ class Rotation_Hub:
         self.last_command = "neutral"
         self.last_rc_time = time.time()
         self.rc_interval = 0.2  # Minimum interval in seconds between commands
+        self.keyboard_override = None
+        self.root.bind("<KeyPress>", self.on_key_press)
+        self.root.bind("<KeyRelease>", self.on_key_release)
+
+    def on_key_press(self, event):
+        key = event.keysym.lower()
+        override_map = {
+            "w": "forward",
+            "a": "yaw_left",
+            "s": "backward",
+            "d": "yaw_right",
+            "shift_l": "downward",
+            "shift_r": "downward",
+            "space": "upward"
+        }
+        if key in override_map:
+            self.keyboard_override = override_map[key]
+
+    def on_key_release(self, event):
+        key = event.keysym.lower()
+        if key in ["w", "a", "s", "d", "shift_l", "shift_r", "space"]:
+            self.keyboard_override = None
 
     def get_nod_candidate(self, x_angle, y_angle):
         """
@@ -253,9 +275,12 @@ class Rotation_Hub:
                     nod_text = ""
 
                 ## Send drone command: only send if command changed and interval elapsed ##
+                # Determine which command to send (keyboard override takes precedence)
+                effective_command = self.keyboard_override if self.keyboard_override else new_command
                 current_time = time.time()
-                if (new_command != self.last_command and 
+                if (effective_command != self.last_command and 
                         (current_time - self.last_rc_time) >= self.rc_interval):
+
                     try:
                         if new_command == "neutral":
                             stop_flying(None, self.drone_controller)
@@ -387,21 +412,6 @@ class Rotation_Hub:
                 self.cleanup()
                 exit(0)
 
-    def error_window(self):
-        """Displays an error window when face landmarks are not detected."""
-
-        error_window = Tk()
-        error_window.title("Error - No Face Detected")
-        Label(error_window, text="No face detected. Please ensure proper lighting and positioning.", font=("Arial", 12)).pack(pady=10)
-
-        retry_button = Button(error_window, text="Retry", command=lambda: self.retry_rotation_hub(error_window))
-        retry_button.pack(side="left", padx=10, pady=10)
-
-        exit_button = Button(error_window, text="Exit", command=error_window.quit)
-        exit_button.pack(side="right", padx=10, pady=10)
-
-        error_window.mainloop()
-
     def takeoff_land(self):
         # Toggle the drone's takeoff/land state in a separate thread
         if self.drone_controller.is_flying:
@@ -411,17 +421,14 @@ class Rotation_Hub:
 
     def update_drone_stream(self):
         """Capture from the Tello video stream and update the Tkinter label."""
-        # Get drone FPV
         frame = self.drone_controller.get_frame_read().frame
         frame = cv2.resize(frame, (self.w, self.h))
 
-        # Draw indicators
         self.indicators.draw_battery_indicator(frame)
         self.indicators.draw_wifi_indicator(frame)
 
-        # Format frame
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        img_pil = Image.fromarray(frame_rgb)
+        # Directly convert to PIL without changing color space
+        img_pil = Image.fromarray(frame)
         imgtk = ImageTk.PhotoImage(image=img_pil)
         self.drone_stream_lbl.imgtk = imgtk
         self.drone_stream_lbl.configure(image=imgtk)

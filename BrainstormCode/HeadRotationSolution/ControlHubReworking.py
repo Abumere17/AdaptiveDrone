@@ -1,8 +1,8 @@
 '''
-    Himadri Saha, Daniel Diep, Tejas Patil
-    LivePhaseRotation.py
+    Himadri Saha
+    ControlHubReworking.py
     
-    Acts as the main controller for the drone using head rotation commands
+    Seprate file to rework ControlHub.py
 
     Controls:
     Look up: fly up
@@ -13,9 +13,30 @@
     nod down: backwards
 
     TODO:
-    - add photography controls
-    - Add keyboard commands
+    - add keyboard commands
+    - Rework functions
+
+    ex.
+    class ControlHub:
+        def __init__(): # Initalizes class
+            
+        def start(): # Runs when fly button is pushed
+        
+        def update_drone_stream(): # update FPV with indicators
+        
+        def update_selfie(): # reutrns the selife frame and landmarks, ***
+        
+        def send_drone_command(): # send drone command using facial landmarks ***
+
+        def takeoff_land(): 
+        
+        def killswitch(): 
+
+        def cleanup(): # exit the code 
+
 '''
+
+# Imports
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
@@ -27,17 +48,18 @@ import numpy as np
 from tkinter import Tk, Label, Button, Frame, Toplevel
 from PIL import Image, ImageTk
 from djitellopy import tello
-from TelloControlModule.flight_commands import start_flying, stop_flying
-from TelloControlModule.indicators import Indicators
-from BrainstormCode.HeadRotationSolution.TellDroneTest import TestTello
-from TelloControlModule.take_pictures import take_picture
-# Constants
-TILT_THRESHOLD = 30         # Pixel threshold for head tilt detection
-NOD_THRESHOLD_MIN = 5       # Minimum angle (in degrees) for nod candidate
-NOD_THRESHOLD_MAX = 10      # Maximum angle (in degrees) for nod candidate
-SCALE = 10                  # Pixels per degree for visual gauges
+from FinalBuild.flight_commands import start_flying, stop_flying
+from FinalBuild.indicators import Indicators
+from TellDroneTest import TestTello
+from FinalBuild.take_pictures import take_picture
 
-class Rotation_Hub:
+# Constants
+TILT_THRESHOLD = 30
+NOD_THRESHOLD_MIN = 5
+NOD_THRESHOLD_MAX = 10
+SCALE = 10
+
+class Control_Hub:
     def __init__(self, testTello = False, parent=None):
         """
             Runs when new drone button is pressed
@@ -56,13 +78,11 @@ class Rotation_Hub:
 
     def start(self):
         """
-            Initalization commands before the user starts controling the drone
+            Runs when fly is pressed in main menu
         """
 
-        # Initialize webcam capture
+        # Initialize webcam capture and MediaPipe face mesh
         self.cap = cv2.VideoCapture(0)
-
-        # Initialize MediaPipe face mesh
         self.face_mesh = mp.solutions.face_mesh.FaceMesh(
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5
@@ -78,8 +98,6 @@ class Rotation_Hub:
         self.root.title("Control Hub")
         self.video_frame = Frame(self.root)
         self.video_frame.pack()
-
-        # Set dimensions for both drone FPV and webcam streams
         self.h = 480
         self.w = 720
 
@@ -121,39 +139,103 @@ class Rotation_Hub:
         self.last_rc_time = time.time()
         self.rc_interval = 0.2  # Minimum interval in seconds between commands
 
-    def get_nod_candidate(self, x_angle, y_angle):
-        """
-        Helper function to collect nod position
-        """
-        candidate = None
-        # Check yaw for left/right nods
-        if -NOD_THRESHOLD_MAX < y_angle < -NOD_THRESHOLD_MIN:
-            candidate = "Nod Left"
-        elif NOD_THRESHOLD_MIN < y_angle < NOD_THRESHOLD_MAX:
-            candidate = "Nod Right"
-        # Check pitch for up/down nods
-        elif NOD_THRESHOLD_MIN < x_angle < NOD_THRESHOLD_MAX:
-            candidate = "Nod Up"
-        elif -NOD_THRESHOLD_MAX < x_angle < -NOD_THRESHOLD_MIN:
-            candidate = "Nod Down"
-        return candidate
+    def takeoff_land(self):
+        # Toggle the drone's takeoff/land state in a separate thread
+        if self.drone_controller.is_flying:
+            threading.Thread(target=lambda: self.drone_controller.land()).start()
+        else:
+            threading.Thread(target=lambda: self.drone_controller.takeoff()).start()
 
-    def update_head_pose(self):
-        """Output webcam frame and send controls to drone"""
-        # Default texts for display
+    def kill_switch(self):
+        """
+        Immediately send an emergency shutdown to the drone and exit the program.
+        """
+        try:
+            # Send emergency command to shut off the drone
+            threading.Thread(target=lambda: self.drone_controller.emergency()).start()
+            time.sleep(1)
+        except Exception as e:
+            print("Error during kill switch:", e)
+        finally:
+            self.cleanup()
+            self.root.destroy()
+            exit(0)
+
+    def update_drone_stream(self):
+        """Capture from the Tello video stream and update the Tkinter label."""
+        # Get drone FPV
+        frame = self.drone_controller.get_frame_read().frame
+        frame = cv2.resize(frame, (self.w, self.h))
+
+        # Draw indicators
+        self.indicators.draw_battery_indicator(frame)
+        self.indicators.draw_wifi_indicator(frame)
+
+        # Format frame
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        img_pil = Image.fromarray(frame_rgb)
+        imgtk = ImageTk.PhotoImage(image=img_pil)
+        self.drone_stream_lbl.imgtk = imgtk
+        self.drone_stream_lbl.configure(image=imgtk)
+        self.root.after(10, self.update_drone_stream)
+
+    def get_head_pose(self, face_landmarks, img_h, img_w):
+        landmarks_dict = {}
+        for idx, lm in enumerate(face_landmarks.landmark):
+            x, y = int(lm.x * img_w), int(lm.y * img_h)
+            landmarks_dict[idx] = (x, y, lm.z)
+
+        # Prepare arrays for head pose estimation using selected landmarks
+        face_2d = []
+        face_3d = []
+        indices_for_pose = [33, 263, 1, 61, 291, 199]  # Example indices
+        for i in indices_for_pose:
+            if i in landmarks_dict:
+                x, y, z = landmarks_dict[i]
+                face_2d.append([x, y])
+                face_3d.append([x, y, z])
+                if i == 1:
+                    nose_2d = (x, y)
+                    nose_3d = (x, y, z * 3000)
+
+        face_2d = np.array(face_2d, dtype=np.float64)
+        face_3d = np.array(face_3d, dtype=np.float64)
+
+        # Camera matrix and distortion coefficients
+        focal_length = img_w
+        cam_matrix = np.array([
+            [focal_length, 0, img_w / 2],
+            [0, focal_length, img_h / 2],
+            [0, 0, 1]
+        ])
+        dist_matrix = np.zeros((4, 1), dtype=np.float64)
+
+        # Solve PnP to estimate head pose
+        success_pnp, rot_vec, trans_vec = cv2.solvePnP(
+            face_3d, face_2d, cam_matrix, dist_matrix
+        )
+
+        # Decompose rotation matrix to get head angles (in degrees)
+        rmat, _ = cv2.Rodrigues(rot_vec)
+        angles, _, _, _, _, _ = cv2.RQDecomp3x3(rmat)
+        x_angle = angles[0] * 360  # Pitch (up/down)
+        y_angle = angles[1] * 360  # Yaw (left/right)
+        z_angle = angles[2] * 360  # Roll
+
+        return [x_angle, y_angle, landmarks_dict]
+
+    def update_selfie(self):
+        ''' Updates webcam display and outputs user landmark data for send_drone_command() '''
+        ## Initalize values ##
+        # Default texts for display, Timer for drone
         head_pose_text = ""
         nod_text = ""
-        
         success, image = self.cap.read()
-
-        # Timer for drone
         start = time.time()
 
-        # Flip image for selfie view and convert BGR to RGB
+        # Flip image for selfie view and convert BGR to RGB, Collect landmarks from image
         image = cv2.cvtColor(cv2.flip(image, 1), cv2.COLOR_BGR2RGB)
         image.flags.writeable = False
-
-        # Collect landmarks from image
         results = self.face_mesh.process(image)
         image.flags.writeable = True
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
@@ -164,116 +246,15 @@ class Rotation_Hub:
             self.last_detected_time = time.time()  # Reset detection time if face is found
 
             for face_landmarks in results.multi_face_landmarks:
-                landmarks_dict = {}
-                for idx, lm in enumerate(face_landmarks.landmark):
-                    x, y = int(lm.x * img_w), int(lm.y * img_h)
-                    landmarks_dict[idx] = (x, y, lm.z)
+                ## Get head pose
+                headPoseArray = self.get_head_pose(face_landmarks, img_h, img_w)
+                y_angle = headPoseArray[1]
+                x_angle = headPoseArray[2]
+                landmarks_dict = headPoseArray[3]
 
-                # Prepare arrays for head pose estimation using selected landmarks
-                face_2d = []
-                face_3d = []
-                indices_for_pose = [33, 263, 1, 61, 291, 199]  # Example indices
-                for i in indices_for_pose:
-                    if i in landmarks_dict:
-                        x, y, z = landmarks_dict[i]
-                        face_2d.append([x, y])
-                        face_3d.append([x, y, z])
-                        if i == 1:
-                            nose_2d = (x, y)
-                            nose_3d = (x, y, z * 3000)
+                ## Send command
+                head_pose_text, nod_text = self.send_drone_command(y_angle, x_angle, landmarks_dict, image, img_w)
 
-                face_2d = np.array(face_2d, dtype=np.float64)
-                face_3d = np.array(face_3d, dtype=np.float64)
-
-                # Camera matrix and distortion coefficients
-                focal_length = img_w
-                cam_matrix = np.array([
-                    [focal_length, 0, img_w / 2],
-                    [0, focal_length, img_h / 2],
-                    [0, 0, 1]
-                ])
-                dist_matrix = np.zeros((4, 1), dtype=np.float64)
-
-                # Solve PnP to estimate head pose
-                success_pnp, rot_vec, trans_vec = cv2.solvePnP(
-                    face_3d, face_2d, cam_matrix, dist_matrix
-                )
-
-                # Decompose rotation matrix to get head angles (in degrees)
-                rmat, _ = cv2.Rodrigues(rot_vec)
-                angles, _, _, _, _, _ = cv2.RQDecomp3x3(rmat)
-                x_angle = angles[0] * 360  # Pitch (up/down)
-                y_angle = angles[1] * 360  # Yaw (left/right)
-                z_angle = angles[2] * 360  # Roll
-
-                # Regular head orientation detection for continuous commands
-                if y_angle < -12:
-                    new_command = "yaw_left"
-                    head_pose_text = "Looking Left"
-                elif y_angle > 12:
-                    new_command = "yaw_right"
-                    head_pose_text = "Looking Right"
-                elif x_angle < -12:
-                    new_command = "downward"
-                    head_pose_text = "Looking Down"
-                elif x_angle > 12:
-                    new_command = "upward"
-                    head_pose_text = "Looking Up"
-                else:
-                    new_command = "neutral"
-                    head_pose_text = "Forward"
-
-                # Head Tilt Detection
-                if 152 in landmarks_dict and 234 in landmarks_dict and 454 in landmarks_dict:
-                    chin_x, chin_y, _ = landmarks_dict[152]
-                    right_ear_x, right_ear_y, _ = landmarks_dict[234]
-                    left_ear_x, left_ear_y, _ = landmarks_dict[454]
-                    cv2.line(image, (0, chin_y), (img_w, chin_y), (0, 255, 255), 2)
-                    left_distance = abs(left_ear_y - chin_y)
-                    right_distance = abs(right_ear_y - chin_y)
-                    if (left_distance - right_distance) > TILT_THRESHOLD:
-                        tilt_text = "Tilt Left"
-                    elif (right_distance - left_distance) > TILT_THRESHOLD:
-                        tilt_text = "Tilt Right"
-                    else:
-                        tilt_text = "No Tilt"
-                    cv2.putText(image, tilt_text, (20, 100),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 0), 2)
-
-                # Immediate Nod Detection Based on Visual Gauge
-                candidate = self.get_nod_candidate(x_angle, y_angle)
-                if candidate is not None:
-                    nod_text = candidate
-                    if nod_text == 'Nod Up':
-                        new_command = "forward"
-                    elif nod_text == 'Nod down':
-                        new_command = "backward"
-                    elif nod_text == 'Nod Left':
-                        new_command = "neutral" # change
-                    elif nod_text == 'Nod Right':
-                        new_command = "take photo" # change
-                else:
-                    nod_text = ""
-
-                ## Send drone command: only send if command changed and interval elapsed
-                current_time = time.time()
-                if (new_command != self.last_command and 
-                        (current_time - self.last_rc_time) >= self.rc_interval):
-                    try:
-                        if new_command == "neutral":
-                            stop_flying(None, self.drone_controller)
-                        elif new_command == "take photo":
-                            print("Taking Photo.")
-                            frame = self.drone_controller.get_frame_read().frame
-                            take_picture(frame)
-                        else:
-                            start_flying(None, new_command, self.drone_controller,
-                                        self.drone_controller.speed)
-                        self.last_command = new_command
-                        self.last_rc_time = current_time
-                    except Exception as e:
-                        print("Error sending RC command:", e)
-            
                 ## Draw frame
                 # Display the regular head pose text and nod result
                 cv2.putText(image, head_pose_text, (20, 50),
@@ -379,70 +360,96 @@ class Rotation_Hub:
                 self.head_pose_lbl.configure(image=imgtk)
                 self.root.after(10, self.update_head_pose)
         
-        else: # Landmarks not dectected
+        else:
             print("No landmarks dectected")
             self.root.after(10, self.update_head_pose)
 
-           # if time.time() - self.last_detected_time > 5:
-              #  print("No face detected for 5 seconds. Landing the drone and exiting...")
-               # self.drone_controller.land()
-             #   self.cleanup()
-              #  exit(0)
+            # Close app if face not dectected for 5 sec
+            if time.time() - self.last_detected_time > 5:
+                print("No face detected for 5 seconds. Landing the drone and exiting...")
+                self.drone_controller.land()
+                self.cleanup()
+                exit(0)
 
-    def error_window(self):
-        """Displays an error window when face landmarks are not detected."""
-
-        error_window = Tk()
-        error_window.title("Error - No Face Detected")
-        Label(error_window, text="No face detected. Please ensure proper lighting and positioning.", font=("Arial", 12)).pack(pady=10)
-
-        retry_button = Button(error_window, text="Retry", command=lambda: self.retry_rotation_hub(error_window))
-        retry_button.pack(side="left", padx=10, pady=10)
-
-        exit_button = Button(error_window, text="Exit", command=error_window.quit)
-        exit_button.pack(side="right", padx=10, pady=10)
-
-        error_window.mainloop()
-
-    def takeoff_land(self):
-        # Toggle the drone's takeoff/land state in a separate thread
-        if self.drone_controller.is_flying:
-            threading.Thread(target=lambda: self.drone_controller.land()).start()
+    def send_drone_command(self, y_angle, x_angle, landmarks_dict, image, img_w):
+        ''' Sends drone command based on head pose angles '''
+        # Get Regular head orientation position
+        if y_angle < -12:
+            new_command = "yaw_left"
+            head_pose_text = "Looking Left"
+        elif y_angle > 12:
+            new_command = "yaw_right"
+            head_pose_text = "Looking Right"
+        elif x_angle < -12:
+            new_command = "downward"
+            head_pose_text = "Looking Down"
+        elif x_angle > 12:
+            new_command = "upward"
+            head_pose_text = "Looking Up"
         else:
-            threading.Thread(target=lambda: self.drone_controller.takeoff()).start()
+            new_command = "neutral"
+            head_pose_text = "Forward"
 
-    def update_drone_stream(self):
-        """Capture from the Tello video stream and update the Tkinter label."""
-        # Get drone FPV
-        frame = self.drone_controller.get_frame_read().frame
-        frame = cv2.resize(frame, (self.w, self.h))
+        # Head Tilt Detection
+        if 152 in landmarks_dict and 234 in landmarks_dict and 454 in landmarks_dict:
+            chin_x, chin_y, _ = landmarks_dict[152]
+            right_ear_x, right_ear_y, _ = landmarks_dict[234]
+            left_ear_x, left_ear_y, _ = landmarks_dict[454]
+            cv2.line(image, (0, chin_y), (img_w, chin_y), (0, 255, 255), 2)
+            left_distance = abs(left_ear_y - chin_y)
+            right_distance = abs(right_ear_y - chin_y)
+            if (left_distance - right_distance) > TILT_THRESHOLD:
+                tilt_text = "Tilt Left"
+            elif (right_distance - left_distance) > TILT_THRESHOLD:
+                tilt_text = "Tilt Right"
+            else:
+                tilt_text = "No Tilt"
+            cv2.putText(image, tilt_text, (20, 100),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 0), 2)
 
-        # Draw indicators
-        self.indicators.draw_battery_indicator(frame)
-        self.indicators.draw_wifi_indicator(frame)
+        # Immediate Nod Detection Based on Visual Gauge
+        candidate = None
+        if -NOD_THRESHOLD_MAX < y_angle < -NOD_THRESHOLD_MIN:
+            candidate = "Nod Left"
+        elif NOD_THRESHOLD_MIN < y_angle < NOD_THRESHOLD_MAX:
+            candidate = "Nod Right"
+        elif NOD_THRESHOLD_MIN < x_angle < NOD_THRESHOLD_MAX:
+            candidate = "Nod Up"
+        elif -NOD_THRESHOLD_MAX < x_angle < -NOD_THRESHOLD_MIN:
+            candidate = "Nod Down"
+        if candidate is not None:
+            nod_text = candidate
+            if nod_text == 'Nod Up':
+                new_command = "forward"
+            elif nod_text == 'Nod Down':
+                new_command = "backward"
+            elif nod_text == 'Nod Left':
+                new_command = "neutral" # change
+            elif nod_text == 'Nod Right':
+                new_command = "take photo"
+        else:
+            nod_text = ""
 
-        # Format frame
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        img_pil = Image.fromarray(frame_rgb)
-        imgtk = ImageTk.PhotoImage(image=img_pil)
-        self.drone_stream_lbl.imgtk = imgtk
-        self.drone_stream_lbl.configure(image=imgtk)
-        self.root.after(10, self.update_drone_stream)
+        ## Send drone command: only send if command changed and interval elapsed ##
+        current_time = time.time()
+        if (new_command != self.last_command and 
+                (current_time - self.last_rc_time) >= self.rc_interval):
+            try:
+                if new_command == "neutral":
+                    stop_flying(None, self.drone_controller)
+                elif new_command == "take photo":
+                    print("Taking Photo.")
+                    frame = self.drone_controller.get_frame_read().frame
+                    take_picture(frame)
+                else:
+                    start_flying(None, new_command, self.drone_controller,
+                                self.drone_controller.speed)
+                self.last_command = new_command
+                self.last_rc_time = current_time
+            except Exception as e:
+                print("Error sending RC command:", e)
 
-    def kill_switch(self):
-        """
-        Immediately send an emergency shutdown to the drone and exit the program.
-        """
-        try:
-            # Send emergency command to shut off the drone
-            threading.Thread(target=lambda: self.drone_controller.emergency()).start()
-            time.sleep(1)
-        except Exception as e:
-            print("Error during kill switch:", e)
-        finally:
-            self.cleanup()
-            self.root.destroy()
-            exit(0)
+        return head_pose_text, nod_text
 
     def run(self):
         """Start updating both video streams and run the Tkinter main loop."""
@@ -466,6 +473,6 @@ class Rotation_Hub:
             print(f"Error during cleanup: {e}")
 
 if __name__ == "__main__":
-    testTello = False # Change to false for testing when a drone is connected
+    testTello = False
     rotation_hub = Rotation_Hub(testTello)
     rotation_hub.run()
