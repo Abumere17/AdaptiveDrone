@@ -11,9 +11,11 @@
     look right: rotate right
     nod up: forward
     nod down: backwards
+    tilt right: take photo *
+    tilt left: takeoff/land *
 
     TODO:
-    - Add keyboard commands
+    - test tilt controls
 '''
 
 import os
@@ -84,13 +86,12 @@ class Rotation_Hub:
         self.h = 480
         self.w = 720
 
-        # Initalize webcam stream
-        self.head_pose_lbl = Label(self.video_frame)
-        self.head_pose_lbl.pack(side="left", padx=10, pady=10)
-
         # Label for Tello video stream
         self.drone_stream_lbl = Label(self.video_frame)
         self.drone_stream_lbl.pack(side="right", padx=10, pady=10)
+
+        # Webcam frame Initalization
+        self.latest_webcam_frame = np.zeros((self.h, self.w, 3), dtype=np.uint8)
 
         # Initalize buttons
         self.control_frame = Frame(self.root)
@@ -183,7 +184,7 @@ class Rotation_Hub:
                     (0, 255, 0), -1)
         current_offset = int(self.y_angle * SCALE)
         marker_x = gauge_center_x + current_offset
-        cv2.circle(frame, (marker_x, gauge_y + gauge_height // 2), 8, (0, 0, 255), -1)
+        cv2.circle(frame, (marker_x, gauge_y + gauge_height // 2), 8, (255, 0, 0), -1)
 
         # Vertical gauge (pitch)
         gauge_height_pitch = int(NOD_THRESHOLD_MAX * SCALE * 2)
@@ -206,7 +207,7 @@ class Rotation_Hub:
                     (0, 255, 0), -1)
         current_offset_pitch = int(self.x_angle * SCALE)
         marker_y = gauge_center_y - current_offset_pitch
-        cv2.circle(frame, (gauge_x + gauge_width_pitch // 2, marker_y), 8, (0, 0, 255), -1)
+        cv2.circle(frame, (gauge_x + gauge_width_pitch // 2, marker_y), 8, (255, 0, 0), -1)
 
     def update_head_pose(self):
         """Output webcam frame and send controls to drone"""
@@ -299,8 +300,10 @@ class Rotation_Hub:
                     right_distance = abs(right_ear_y - chin_y)
                     if (left_distance - right_distance) > TILT_THRESHOLD:
                         tilt_text = "Tilt Left"
+                        new_command = "takeoffLand"
                     elif (right_distance - left_distance) > TILT_THRESHOLD:
                         tilt_text = "Tilt Right"
+                        new_command = "take photo"
                     else:
                         tilt_text = "No Tilt"
                     cv2.putText(image, tilt_text, (20, 100),
@@ -315,9 +318,9 @@ class Rotation_Hub:
                     elif nod_text == 'Nod Down':
                         new_command = "backward"
                     elif nod_text == 'Nod Left':
-                        new_command = "neutral" # change
+                        new_command = "neutral"
                     elif nod_text == 'Nod Right':
-                        new_command = "take photo"
+                        new_command = "neutral"
                 else:
                     nod_text = ""
 
@@ -334,6 +337,8 @@ class Rotation_Hub:
                             print("Taking Photo.")
                             frame = self.drone_controller.get_frame_read().frame
                             take_picture(frame)
+                        elif new_command == "takeoffLand":
+                            self.takeoff_land()
                         else:
                             start_flying(None, new_command, self.drone_controller,
                                         self.drone_controller.speed)
@@ -385,12 +390,8 @@ class Rotation_Hub:
                     connection_drawing_spec=self.drawing_spec
                 )
 
-                # Convert the processed frame for Tkinter display
-                image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                img_pil = Image.fromarray(image_rgb)
-                imgtk = ImageTk.PhotoImage(image=img_pil)
-                self.head_pose_lbl.imgtk = imgtk
-                self.head_pose_lbl.configure(image=imgtk)
+                # Store webcam frame as variable
+                self.latest_webcam_frame = image
                 self.root.after(10, self.update_head_pose)
                 
         else:
@@ -412,7 +413,7 @@ class Rotation_Hub:
             threading.Thread(target=lambda: self.drone_controller.takeoff()).start()
 
     def update_drone_stream(self):
-        """ Capture from the Tello FPV """
+        """ Capture from the Tello FPV and overlay webcam feed """
         # Get drone FPV
         self.frame = self.drone_controller.get_frame_read().frame
         self.frame = cv2.resize(self.frame, (self.w, self.h))
@@ -422,7 +423,20 @@ class Rotation_Hub:
         self.indicators.draw_wifi_indicator(self.frame)
         self.draw_gauges(self.frame)
 
-        # Update frame
+        # Overlay webcam feed
+        if hasattr(self, "latest_webcam_frame"):
+            # Resize webcam frame to smaller size
+            webcam_small = cv2.resize(self.latest_webcam_frame, (200, 150))
+
+            # Convert to RGB if needed
+            if webcam_small.shape[2] == 3:
+                # Bottom-right placement
+                x_offset = self.w - 200 - 10
+                y_offset = self.h - 150 - 10
+
+                self.frame[y_offset:y_offset + 150, x_offset:x_offset + 200] = webcam_small
+
+        # Convert to Tkinter image and update
         img_pil = Image.fromarray(self.frame)
         imgtk = ImageTk.PhotoImage(image=img_pil)
         self.drone_stream_lbl.imgtk = imgtk
@@ -466,6 +480,6 @@ class Rotation_Hub:
             print(f"Error during cleanup: {e}")
 
 if __name__ == "__main__":
-    testTello = True # Change to false for testing when a drone is connected
+    testTello = False # Change to false for testing when a drone is connected
     rotation_hub = Rotation_Hub(testTello)
     rotation_hub.run()
