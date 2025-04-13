@@ -18,21 +18,66 @@
 
     ex.
     class ControlHub:
-        def __init__(): # Initalizes class
+        def __init__(self, TelloDrone, root_of_tk_window): # Initalizes class
+            # Attempt drone connection    
+        
+        def start(self): # Runs when fly button is pushed
+            # Initalize frames
+            # indicators
+            # control parameters
+            # on screen buttons
+
+        def update_drone_stream(self): # update FPV frame
+            # Display drone FPV frame
+            # Display indicators 
+            # Control gauges
+            # selfie cam
+            self.update_selfie()
             
-        def start(): # Runs when fly button is pushed
-        
-        def update_drone_stream(): # update FPV with indicators
-        
-        def update_selfie(): # reutrns the selife frame and landmarks, ***
-        
-        def send_drone_command(): # send drone command using facial landmarks ***
+        def update_selfie(self): # draws the selife frame
+            # draw selfie frame
+            # Update frame variable
+            self.selfie_frame = frame
 
-        def takeoff_land(): 
-        
-        def killswitch(): 
+        def main_control_loop(self): # Maybe acts as run?
+            # Need to promote/adjust the location of the variables required to get results.multi_face_landmarks
+            if results.multi_face_landmarks:
+                for face_landmarks in results.multi_face_landmarks: 
+                    # display frames
+                    self.update_drone_stream()
+                    self.update_selfie()
 
-        def cleanup(): # exit the code 
+                    # collect head pose info and send drone command
+                    next_command = self.get_head_pose()
+                    if next_command != last_command_sent:
+                        last_command_sent = next_command
+                        self.send_drone_command(next_command)
+
+            # Face landmarks not decteted - cleanup after 5 sec
+            else:
+                print("No landmarks dectected")
+                self.root.after(10, self.update_head_pose)
+
+                # Close app if face not dectected for 5 sec
+                if time.time() - self.last_detected_time > 5:
+                    print("No face detected for 5 seconds. Landing the drone and exiting...")
+                    self.drone_controller.land()
+                    self.cleanup()
+                    exit(0)
+                
+        def get_head_pose(self): # outputs the head pose based on current frame
+            selfie_frame = self.selfie_frame
+            # Do all the calculations ...
+            # output command from drone
+            return current_headpose
+        
+        def send_drone_command(self, current_headpose): # send drone command using facial landmarks
+        
+        def takeoff_land(self): 
+        
+        def killswitch(self): 
+
+        def cleanup(self): # exit the code 
 
 '''
 
@@ -474,5 +519,5 @@ class Control_Hub:
 
 if __name__ == "__main__":
     testTello = False
-    rotation_hub = Rotation_Hub(testTello)
+    rotation_hub = Control_Hub(testTello)
     rotation_hub.run()
