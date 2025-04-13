@@ -16,6 +16,8 @@
 
     TODO:
     - test tilt controls
+    - remove extra GUI stuff
+    - Create log??
 '''
 
 import os
@@ -276,19 +278,19 @@ class Rotation_Hub:
                 # Get Regular head orientation position
                 if self.y_angle < -12:
                     new_command = "yaw_left"
-                    head_pose_text = "Looking Left"
+                    head_pose_text = "Rotate Left"
                 elif self.y_angle > 12:
                     new_command = "yaw_right"
-                    head_pose_text = "Looking Right"
+                    head_pose_text = "Rotate Right"
                 elif self.x_angle < -12:
                     new_command = "downward"
-                    head_pose_text = "Looking Down"
+                    head_pose_text = "Fly Down"
                 elif self.x_angle > 12:
                     new_command = "upward"
-                    head_pose_text = "Looking Up"
+                    head_pose_text = "Fly Up"
                 else:
                     new_command = "neutral"
-                    head_pose_text = "Forward"
+                    head_pose_text = ""
 
                 # Head Tilt Detection
                 if 152 in landmarks_dict and 234 in landmarks_dict and 454 in landmarks_dict:
@@ -299,28 +301,31 @@ class Rotation_Hub:
                     left_distance = abs(left_ear_y - chin_y)
                     right_distance = abs(right_ear_y - chin_y)
                     if (left_distance - right_distance) > TILT_THRESHOLD:
-                        tilt_text = "Tilt Left"
+                        tilt_text = "Taking off/Land"
                         new_command = "takeoffLand"
                     elif (right_distance - left_distance) > TILT_THRESHOLD:
-                        tilt_text = "Tilt Right"
+                        tilt_text = "Taking photo"
                         new_command = "take photo"
                     else:
-                        tilt_text = "No Tilt"
-                    cv2.putText(image, tilt_text, (20, 100),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 0), 2)
+                        tilt_text = ""
+                    if tilt_text:
+                        cv2.putText(image, tilt_text, (20, 100),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 0), 2)
 
                 # Immediate Nod Detection Based on Visual Gauge
                 candidate = self.get_nod_candidate(self.x_angle, self.y_angle)
                 if candidate is not None:
                     nod_text = candidate
-                    if nod_text == 'Nod Up':
+                    if nod_text == 'Forwards':
                         new_command = "forward"
-                    elif nod_text == 'Nod Down':
+                    elif nod_text == 'Backwards':
                         new_command = "backward"
-                    elif nod_text == 'Nod Left':
-                        new_command = "neutral"
                     elif nod_text == 'Nod Right':
                         new_command = "neutral"
+                        nod_text = ''
+                    elif nod_text == 'Nod Left':
+                        new_command = "neutral"
+                        nod_text = ''
                 else:
                     nod_text = ""
 
@@ -329,7 +334,6 @@ class Rotation_Hub:
                 current_time = time.time()
                 if (new_command != self.last_command and 
                         (current_time - self.last_rc_time) >= self.rc_interval):
-
                     try:
                         if new_command == "neutral":
                             stop_flying(None, self.drone_controller)
@@ -349,14 +353,9 @@ class Rotation_Hub:
             
                 ## Draw frame ##
                 # Display the regular head pose text and nod result
-                cv2.putText(image, head_pose_text, (20, 50),
-                            cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
-                cv2.putText(image, "x: " + str(np.round(self.x_angle, 2)), (500, 50),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                cv2.putText(image, "y: " + str(np.round(self.y_angle, 2)), (500, 100),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                cv2.putText(image, "z: " + str(np.round(self.z_angle, 2)), (500, 150),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                if head_pose_text and not nod_text:
+                    cv2.putText(image, head_pose_text, (20, 50),
+                                cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
                 if nod_text:
                     cv2.putText(image, nod_text, (20, 200),
                                 cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 2)
@@ -378,27 +377,16 @@ class Rotation_Hub:
                 end = time.time()
                 total_time = end - start
                 fps = 1 / total_time if total_time > 0 else 0
-                cv2.putText(image, f'FPS: {int(fps)}', (20, 450),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 2)
-
-                # Draw facial landmarks
-                self.mp_drawing.draw_landmarks(
-                    image=image,
-                    landmark_list=face_landmarks,
-                    connections=mp.solutions.face_mesh.FACEMESH_TESSELATION,
-                    landmark_drawing_spec=self.drawing_spec,
-                    connection_drawing_spec=self.drawing_spec
-                )
 
                 # Store webcam frame as variable
                 self.latest_webcam_frame = image
                 self.root.after(10, self.update_head_pose)
-                
+
+        # Close app if face not dectected for 5 sec        
         else:
             print("No landmarks dectected")
             self.root.after(10, self.update_head_pose)
 
-            # Close app if face not dectected for 5 sec
             if time.time() - self.last_detected_time > 5:
                 print("No face detected for 5 seconds. Landing the drone and exiting...")
                 self.drone_controller.land()
@@ -480,6 +468,6 @@ class Rotation_Hub:
             print(f"Error during cleanup: {e}")
 
 if __name__ == "__main__":
-    testTello = False # Change to false for testing when a drone is connected
+    testTello = True # Change to false for testing when a drone is connected
     rotation_hub = Rotation_Hub(testTello)
     rotation_hub.run()
