@@ -8,13 +8,13 @@ This application includes adapted or referenced code from the following open-sou
    - **Role:** GUI Integration Developer , In-App Help System
 
 2. **Himadri Saha**
-   - **Role:** Drone Control System Developer (Flight Movement & Responsiveness)
+   - **Role:** Face Pose Dectetion Developer
 
 3. **Tejas Patil**
-   - **Role:** Documentation, In-App Help System, and User Guidance
+   - **Role:** Drone Indicator and Communcation Developer
 
 4. **Daniel Diep**
-   - **Role:** Drone Backward/Downward Movement Refinement and Safety Logic
+   - **Role:** Drone Controller Developer
 
 ---
 
