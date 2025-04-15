@@ -15,7 +15,6 @@
     tilt left: takeoff/land *
 
     TODO:
-    - test tilt controls
     - remove extra GUI stuff
     - Create log??
 '''
@@ -42,7 +41,7 @@ NOD_THRESHOLD_MIN = 5       # Minimum angle (in degrees) for nod candidate
 NOD_THRESHOLD_MAX = 10      # Maximum angle (in degrees) for nod candidate
 SCALE = 10                  # Pixels per degree for visual gauges
 
-class Rotation_Hub:
+class Control_Hub:
     def __init__(self, testTello = False, parent=None):
         """
             Runs when new drone button is pressed
@@ -316,10 +315,10 @@ class Rotation_Hub:
                 candidate = self.get_nod_candidate(self.x_angle, self.y_angle)
                 if candidate is not None:
                     nod_text = candidate
-                    if nod_text == 'Forwards':
+                    if nod_text == 'Nod Up':
                         new_command = "forward"
                     elif nod_text == 'Backwards':
-                        new_command = "backward"
+                        new_command = "Nod Down"
                     elif nod_text == 'Nod Right':
                         new_command = "neutral"
                         nod_text = ''
@@ -416,12 +415,11 @@ class Rotation_Hub:
             # Resize webcam frame to smaller size
             webcam_small = cv2.resize(self.latest_webcam_frame, (200, 150))
 
-            # Convert to RGB if needed
+            # Convert to RGB
             if webcam_small.shape[2] == 3:
                 # Bottom-right placement
                 x_offset = self.w - 200 - 10
                 y_offset = self.h - 150 - 10
-
                 self.frame[y_offset:y_offset + 150, x_offset:x_offset + 200] = webcam_small
 
         # Convert to Tkinter image and update
@@ -469,5 +467,5 @@ class Rotation_Hub:
 
 if __name__ == "__main__":
     testTello = True # Change to false for testing when a drone is connected
-    rotation_hub = Rotation_Hub(testTello)
+    rotation_hub = Control_Hub(testTello)
     rotation_hub.run()

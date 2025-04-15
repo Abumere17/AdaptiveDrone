@@ -14,7 +14,7 @@ import subprocess
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from FinalBuild.ControlHub import Rotation_Hub
+from ControlHub import Control_Hub
 
 class MainMenu:
     def __init__(self, root):
@@ -41,7 +41,7 @@ class MainMenu:
         If successful, sets internal flag to True and shows a confirmation popup.
         """
         try: # does not return an exception when drone isnt connected
-            self.rotation_hub = Rotation_Hub(False, self.root)
+            self.rotation_hub = Control_Hub(False, self.root)
             self.drone_connected = True
             messagebox.showinfo("Connection", "Tello Drone connected successfully!")
 
