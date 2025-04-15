@@ -291,6 +291,25 @@ class Control_Hub:
                     new_command = "neutral"
                     head_pose_text = ""
 
+                # Immediate Nod Detection Based on Visual Gauge
+                candidate = self.get_nod_candidate(self.x_angle, self.y_angle)
+                if candidate is not None:
+                    nod_text = candidate
+                    if nod_text == 'Nod Up':
+                        new_command = "forward"
+                        # nod_text = "forward"
+                    elif nod_text == 'Nod Down':
+                        new_command = "backward"
+                        # nod_text = 'backward'
+                    elif nod_text == 'Nod Right':
+                        new_command = "neutral"
+                        nod_text = ''
+                    elif nod_text == 'Nod Left':
+                        new_command = "neutral"
+                        nod_text = ''
+                else:
+                    nod_text = ""
+
                 # Head Tilt Detection
                 if 152 in landmarks_dict and 234 in landmarks_dict and 454 in landmarks_dict:
                     chin_x, chin_y, _ = landmarks_dict[152]
@@ -310,23 +329,6 @@ class Control_Hub:
                     if tilt_text:
                         cv2.putText(image, tilt_text, (20, 100),
                                     cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 0), 2)
-
-                # Immediate Nod Detection Based on Visual Gauge
-                candidate = self.get_nod_candidate(self.x_angle, self.y_angle)
-                if candidate is not None:
-                    nod_text = candidate
-                    if nod_text == 'Nod Up':
-                        new_command = "forward"
-                    elif nod_text == 'Backwards':
-                        new_command = "Nod Down"
-                    elif nod_text == 'Nod Right':
-                        new_command = "neutral"
-                        nod_text = ''
-                    elif nod_text == 'Nod Left':
-                        new_command = "neutral"
-                        nod_text = ''
-                else:
-                    nod_text = ""
 
                 ## Send drone command: only send if command changed and interval elapsed (keyboard override takes precedence) ##
                 new_command = self.keyboard_override if self.keyboard_override else new_command
