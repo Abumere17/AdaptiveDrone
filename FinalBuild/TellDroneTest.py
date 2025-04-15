@@ -15,8 +15,8 @@ import numpy as np
 from tkinter import Tk, Label, Button, Frame
 from PIL import Image, ImageTk
 from djitellopy import tello
-from FinalBuild.flight_commands import start_flying, stop_flying
-from FinalBuild.indicators import Indicators
+from flight_commands import start_flying, stop_flying
+from indicators import Indicators
 
 class TestTello:
     """Mock Tello drone class for testing without an actual drone."""

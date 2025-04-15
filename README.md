@@ -1,116 +1,49 @@
 
 # **Adaptive Drone Codebase**
 
-Welcome to the Adaptive Drone codebase! This guide provides instructions for setting up Git and following best practices for version control to ensure smooth collaboration.
+Adaptive Drone is an assistive drone controller application designed to enable users with quadriplegia to pilot a DJI Tello drone using head movements. Built in Python, the application uses MediaPipe for facial mesh tracking and the Tello SDK for drone communication.
 
 ---
 
-## **Setup Instructions**
-
-Follow these steps to set up Git and start contributing:
-
-1. **Ensure Git is Installed**:
-   - Verify Git is installed by running:
-     ```
-     git --version
-     ```
-     If not, install Git from [Git's official website](https://git-scm.com/).
-
-2. **Set Up SSH for GitHub**:
-   - Add GitHub’s SSH address to your system PATH.
-   - Generate an SSH key:
-     ```
-     ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
-     ```
-   - Add the generated SSH key to GitHub:
-     - Go to **GitHub > Settings > SSH and GPG Keys > New SSH Key**.
-     - Paste the public key (`id_rsa.pub`).
-
-3. **Configure Git User Info**:
-   - Set your username and email:
-     ```
-     git config --global user.name "Your Name"
-     git config --global user.email "your_email@example.com"
-     ```
-
-4. **Clone the Repository**:
-   - Clone the repo using the SSH address:
-     ```
-     git clone git@github.com:Abumere17/AdaptiveDrone.git
-     ```
+## Features
+- **Head Pose Rotation Control**: Real-time pitch/yaw detection to adjust drone movement.
+- **Keyboard Override Support**: Developers can manually control the drone with `WASD`, `Shift`, and `Space`.
+- **Live FPV Feed**: View the drone's camera feed in the app window.
 
 ---
 
-## **Regular Workflow**
+## Setup Instructions
+1. **Prerequisites:**
+- Python 3.9 or higher
+- Install dependencies with: pip install -r requirements.txt
 
-To maintain an organized and efficient workflow, follow these best practices:
-
-### **1. Branch Management**
-- **Purpose of Branches**:
-  - Branches are used for specific tasks (e.g., new features or bug fixes).
-- **Creating a Branch**:
-  - To create a new branch and switch to it:
-    ```
-    git checkout -b feature-branch-name
-    ```
-- **Switching Branches**:
-  - Use `git checkout` to switch to an existing branch:
-    ```
-    git checkout branch-name
-    ```
-
-### **2. Syncing with Remote**
-- **Pull Changes**:
-  - Always pull the latest changes before starting a new coding session:
-    ```
-    git pull origin main
-    ```
-
-### **3. Making Changes**
-- Use the **Source Control Tab** in VS Code to:
-  1. **Stage Changes**: Select the files you want to include in the commit.
-  2. **Commit Changes**: Add a clear and descriptive commit message.
-  3. **Push Changes**: Push your branch to the remote repository.
-
-### **4. Merging Changes**
-- Once your feature is complete, merge it into the `main` branch:
-  1. Switch to the `main` branch:
-     ```
-     git checkout main
-     ```
-  2. Pull the latest changes:
-     ```
-     git pull origin main
-     ```
-  3. Merge your feature branch:
-     ```
-     git merge feature-branch-name
-     ```
+## Developer Tips
+- **Modifying Drone Commands**: Head to ControlHub.py, and find the gesture mapping logic in the main loop.
+- **Testing Without a Drone**: Use tello_mock_gui.py to simulate drone responses if you don’t have hardware connected.
+- **Facial Threshold Calibration**: This happens at the start — you can modify how expressions are detected by editing the calibration logic.
+- **Visual Overlays**: Customize indicators.py if you want to change how UI elements are displayed on the drone feed.
 
 ---
 
-## **Key Git Commands**
-Here’s a quick reference for common Git commands:
-| **Command**                    | **Description**                             |
-|--------------------------------|---------------------------------------------|
-| `git clone <repo-url>`         | Clone a repository.                        |
-| `git checkout -b <branch>`     | Create and switch to a new branch.         |
-| `git checkout <branch>`        | Switch to an existing branch.              |
-| `git pull origin <branch>`     | Pull changes from the remote branch.       |
-| `git add <file>`               | Stage changes.                             |
-| `git commit -m "message"`      | Commit staged changes with a message.      |
-| `git push origin <branch>`     | Push your branch to the remote repository. |
-| `git merge <branch>`           | Merge a branch into the current branch.    |
+## Facial Gesture Mapping
+**Gesture         Command**
+Nod Up	        Fly Forward
+Fully Up	    Fly Up
+Nod Down	    Fly Backward
+Fully Down	    Fly Down
+Nod Right	    Take Photo
+Fully Right	    Rotate Right
+Fully Left	    Rotate Left
 
 ---
 
-## **Best Practices**
-1. **Commit Messages**:
-   - Use clear and descriptive messages for your commits.
-   - Example: `Added facial detection module to the drone controller.`
+## Contributors
+Himadri Saha - Face pose dectetion devlopment 
+Daniel Diep - Drone controller devloper
+Tejas Patil - Drone controller and communication integration
+Abumere Okhihan - GUI and app architecture devlopment 
 
-2. **Keep `main` Stable**:
-   - Avoid pushing incomplete or unstable code directly to `main`.
+---
 
-3. **Communicate**:
-   - Coordinate with teammates to avoid conflicts, especially during merges.
+## Contact
+Contact Himadri_Saha@student.uml.edu for support
