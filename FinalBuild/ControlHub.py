@@ -15,7 +15,6 @@
     tilt left: takeoff/land *
 
     TODO:
-    - remove extra GUI stuff
     - Create log??
 '''
 

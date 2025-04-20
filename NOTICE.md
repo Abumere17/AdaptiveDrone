@@ -5,10 +5,10 @@ This application includes adapted or referenced code from the following open-sou
 ## 🧑‍💻 Project Contributors
 
 1. **Abumere Okhihan**
-   - **Role:** GUI Integration Developer , In-App Help System
+   - **Role:** GUI Integration Developer, In-App Help System
 
 2. **Himadri Saha**
-   - **Role:** Face Pose Dectetion Developer
+   - **Role:** Face Pose Dectetion and Drone Controller Developer
 
 3. **Tejas Patil**
    - **Role:** Drone Indicator and Communcation Developer
